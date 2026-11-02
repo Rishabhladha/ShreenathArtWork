@@ -62,3 +62,4 @@ async function updateProductImages() {
 updateProductImages()
   .catch(console.error)
   .finally(() => prisma.$disconnect());
+

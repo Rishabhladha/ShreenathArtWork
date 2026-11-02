@@ -26,22 +26,18 @@ export default async function HomePage() {
   return (
     <div className="space-y-16 sm:space-y-24 pb-16">
       {/* Hero Section */}
-      <section className="border-b border-[#DEC99C] bg-gradient-to-b from-[#F5EFE0] via-[#FAF7EE] to-[#FAF7EE] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+      <section className="border-b border-[#DEC99C] bg-[#FAF7EE] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 lg:pt-10 pb-12 sm:pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start lg:items-center">
             {/* Left Column: Story & CTAs */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FAF2DC] border border-[#DEC99C] rounded-sm text-xs text-[#8C6D1F] font-sans font-medium tracking-wide">
-                <Sparkles className="w-3.5 h-3.5 text-[#B8860B]" />
-                <span>Nathdwara Devotional Art Gallery</span>
-              </div>
-              <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#231C10] font-semibold leading-[1.15]">
+            <div className="lg:col-span-7 space-y-5">
+              <h1 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#231C10] font-semibold leading-[1.12]">
                 Hand painted Shreenathji art, made and framed in Nathdwara.
               </h1>
               <p className="text-sm sm:text-base text-[#4A3E2D] leading-relaxed max-w-2xl">
                 Authentic Pichwai paintings, sanctum portraits, and festive utsav compositions. Every artwork is handcrafted with natural mineral pigments, 24kt gold foil, and seasoned teak wood framing by traditional lineage artists.
               </p>
-              <div className="pt-2 flex flex-wrap gap-4">
+              <div className="pt-1 flex flex-wrap gap-4">
                 <Link href="/catalog" className="btn-primary text-sm py-3 px-6 shadow-sm">
                   Browse Paintings
                 </Link>
