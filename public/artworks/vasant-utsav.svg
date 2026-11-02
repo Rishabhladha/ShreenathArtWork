@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#831843"/>
+      <stop offset="50%" stop-color="#9d174d"/>
+      <stop offset="100%" stop-color="#4a0422"/>
+    </linearGradient>
+    <pattern id="pichwai-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="1.5" fill="#FBBF24" fill-opacity="0.12" />
+    </pattern>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Canvas Background -->
+  <rect width="800" height="1000" fill="url(#bg)" />
+  <rect width="800" height="1000" fill="url(#pichwai-dots)" />
+
+  <!-- Traditional Ornate Outer Border -->
+  <rect x="24" y="24" width="752" height="952" fill="none" stroke="#E11D48" stroke-width="4" />
+  <rect x="36" y="36" width="728" height="928" fill="none" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="6,4" />
+  <rect x="44" y="44" width="712" height="912" fill="none" stroke="#E11D48" stroke-width="1" />
+
+  <!-- Four Ornate Corner Motifs -->
+  <g fill="#E11D48">
+    <path d="M 44 44 L 84 44 L 84 52 L 52 52 L 52 84 L 44 84 Z" />
+    <circle cx="64" cy="64" r="5" fill="#FBBF24" />
+    <path d="M 756 44 L 716 44 L 716 52 L 748 52 L 748 84 L 756 84 Z" />
+    <circle cx="736" cy="64" r="5" fill="#FBBF24" />
+    <path d="M 44 956 L 84 956 L 84 948 L 52 948 L 52 916 L 44 916 Z" />
+    <circle cx="64" cy="936" r="5" fill="#FBBF24" />
+    <path d="M 756 956 L 716 956 L 716 948 L 748 948 L 748 916 L 756 916 Z" />
+    <circle cx="736" cy="936" r="5" fill="#FBBF24" />
+  </g>
+
+  <!-- Inner Artwork Area -->
+  <g id="artwork" transform="translate(60, 60)">
+    
+      <rect x="0" y="0" width="680" height="820" fill="#4B0824" rx="4" />
+      <!-- Clouds of Pink Gulal & Yellow Abir -->
+      <circle cx="200" cy="240" r="120" fill="#F43F5E" fill-opacity="0.35"/>
+      <circle cx="480" cy="220" r="110" fill="#F59E0B" fill-opacity="0.35"/>
+      <circle cx="340" cy="380" r="140" fill="#FB7185" fill-opacity="0.25"/>
+      <!-- Pichkari (Brass Water Syringes) -->
+      <g transform="translate(180, 520) rotate(-35)" fill="#FBBF24" stroke="#B45309" stroke-width="2">
+        <rect x="-12" y="-100" width="24" height="160" rx="4"/>
+        <line x1="0" y1="-100" x2="0" y2="-130" stroke="#FBBF24" stroke-width="4"/>
+      </g>
+      <g transform="translate(500, 520) rotate(35)" fill="#FBBF24" stroke="#B45309" stroke-width="2">
+        <rect x="-12" y="-100" width="24" height="160" rx="4"/>
+        <line x1="0" y1="-100" x2="0" y2="-130" stroke="#FBBF24" stroke-width="4"/>
+      </g>
+      <!-- Central Sanctum Figure in White & Gulal -->
+      <rect x="300" y="240" width="80" height="220" rx="20" fill="#F8FAFC" stroke="#F43F5E" stroke-width="3"/>
+      <circle cx="340" cy="200" r="36" fill="#0C0A09" stroke="#FBBF24" stroke-width="2"/>
+    
+  </g>
+
+  <!-- Caption Plate at Bottom -->
+  <g transform="translate(400, 915)" text-anchor="middle">
+    <rect x="-240" y="-28" width="480" height="46" rx="2" fill="#1C1917" fill-opacity="0.88" stroke="#E11D48" stroke-width="1" filter="url(#shadow)" />
+    <text y="-6" fill="#FBF8F3" font-family="'Cormorant Garamond', Georgia, serif" font-size="20" font-weight="600" letter-spacing="1.5">Vasant Utsav Phag Khel</text>
+    <text y="12" fill="#FBBF24" font-family="'Inter', sans-serif" font-size="11" font-weight="500" letter-spacing="2" text-transform="uppercase">Spring Festival of Saffron & Pink Gulal</text>
+  </g>
+</svg>
