@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Plus, Trash2, Upload, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { compressImageForUpload, uploadFileWithProgress } from '@/lib/image-compression';
+import {
+  compressImageForUpload,
+  uploadFileWithProgress,
+  formatUploadErrorMessage,
+} from '@/lib/image-compression';
 
 interface VariantInput {
   id?: string;
@@ -145,6 +149,13 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         fileName: compression.file.name,
       });
 
+      // Guard: Ensure the file can never exceed Vercel's serverless function payload limit
+      if (compression.file.size > 4 * 1024 * 1024) {
+        throw new Error(
+          'Image size could not be optimized below server limit. Please choose a different photo.'
+        );
+      }
+
       const formData = new FormData();
       formData.append('file', compression.file);
 
@@ -173,7 +184,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         setTimeout(() => setSuccessMsg(null), 6000);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Image upload failed');
+      setError(formatUploadErrorMessage(err));
     } finally {
       setUploading(false);
       setUploadState(null);
