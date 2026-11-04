@@ -133,3 +133,9 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -1,11 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatPrice } from '@/lib/money';
 import { useWishlistStore } from '@/store/wishlist-store';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 
 interface ProductCardProps {
   id: string;
@@ -32,6 +32,9 @@ export function ProductCard({
 }: ProductCardProps) {
   const { isInWishlist, addItem, removeItem } = useWishlistStore();
   const wishlisted = isInWishlist(id);
+  const [imgSrc, setImgSrc] = useState(image || '/placeholder-artwork.svg');
+  const [imgLoading, setImgLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -39,27 +42,62 @@ export function ProductCard({
     if (wishlisted) {
       removeItem(id);
     } else {
-      addItem({ productId: id, title, slug, price, image });
+      addItem({ productId: id, title, slug, price, image: imgSrc });
     }
   };
 
+  const handleNavigate = () => {
+    setIsNavigating(true);
+  };
+
   return (
-    <article className="group bg-white border border-[#DEC99C] rounded-sm overflow-hidden flex flex-col transition-all duration-300 shadow-[0_2px_8px_rgba(35,28,16,0.04)] hover:shadow-[0_10px_28px_rgba(35,28,16,0.12)] hover:border-[#B8860B]">
+    <article className="group bg-white border border-[#DEC99C] rounded-sm overflow-hidden flex flex-col transition-all duration-300 shadow-[0_2px_8px_rgba(35,28,16,0.04)] hover:shadow-[0_10px_28px_rgba(35,28,16,0.12)] hover:border-[#B8860B] relative">
       {/* Artwork Image Container */}
-      <Link href={`/product/${slug}`} className="relative block aspect-[4/5] bg-[#F7F2E4] overflow-hidden border-b border-[#DEC99C]/60">
+      <Link
+        href={`/product/${slug}`}
+        prefetch={true}
+        onClick={handleNavigate}
+        className="relative block aspect-[4/5] bg-[#F7F2E4] overflow-hidden border-b border-[#DEC99C]/60 focus-ring"
+      >
+        {/* Skeleton Shimmer while loading */}
+        {imgLoading && (
+          <div className="absolute inset-0 bg-gradient-to-r from-[#F4EFE6] via-[#FAF6EF] to-[#F4EFE6] animate-pulse flex items-center justify-center">
+            <span className="text-[10px] text-[#A8987E] tracking-wider uppercase">Loading art...</span>
+          </div>
+        )}
+
         <Image
-          src={image || '/placeholder-artwork.svg'}
+          src={imgSrc}
           alt={title}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          className={`object-cover transition-all duration-500 group-hover:scale-[1.04] ${
+            imgLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+          }`}
+          onLoad={() => setImgLoading(false)}
+          onError={() => {
+            if (imgSrc !== '/placeholder-artwork.svg') {
+              setImgSrc('/placeholder-artwork.svg');
+            }
+            setImgLoading(false);
+          }}
         />
+
+        {/* Navigation Loading Spinner Overlay */}
+        {isNavigating && (
+          <div className="absolute inset-0 bg-[#231C10]/40 backdrop-blur-[1px] flex items-center justify-center transition-opacity z-10">
+            <div className="flex items-center gap-2 bg-[#231C10]/90 text-[#FAF7EE] text-xs px-3 py-1.5 rounded-sm shadow-md">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C59B27]" />
+              <span>Opening artwork...</span>
+            </div>
+          </div>
+        )}
 
         {/* Wishlist Button */}
         <button
           type="button"
           onClick={toggleWishlist}
-          className="absolute top-3 right-3 p-2 bg-white/95 backdrop-blur-sm border border-[#DEC99C] rounded-sm text-[#231C10] hover:text-[#B8860B] transition-colors focus-ring shadow-xs"
+          className="absolute top-3 right-3 p-2 bg-white/95 backdrop-blur-sm border border-[#DEC99C] rounded-sm text-[#231C10] hover:text-[#B8860B] transition-colors focus-ring shadow-xs z-10"
           aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
@@ -69,7 +107,7 @@ export function ProductCard({
 
         {/* Stock / Out of Stock pill if 0 */}
         {stock <= 0 && (
-          <div className="absolute bottom-3 left-3 px-2 py-1 bg-[#231C10]/95 text-[#FAF7EE] text-[10px] tracking-wider uppercase font-sans rounded-sm">
+          <div className="absolute bottom-3 left-3 px-2 py-1 bg-[#231C10]/95 text-[#FAF7EE] text-[10px] tracking-wider uppercase font-sans rounded-sm z-10">
             Sold / Made to order
           </div>
         )}
@@ -84,7 +122,9 @@ export function ProductCard({
             </p>
           )}
           <h3 className="font-serif text-base font-semibold text-[#231C10] mt-1 line-clamp-1 group-hover:text-[#B8860B] transition-colors">
-            <Link href={`/product/${slug}`}>{title}</Link>
+            <Link href={`/product/${slug}`} prefetch={true} onClick={handleNavigate}>
+              {title}
+            </Link>
           </h3>
           <p className="text-xs text-[#7A694F] line-clamp-1 mt-0.5">{medium}</p>
         </div>
@@ -110,4 +150,3 @@ export function ProductCard({
     </article>
   );
 }
-

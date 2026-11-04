@@ -105,7 +105,7 @@ export default function CartPage() {
             >
               <div className="relative w-24 h-28 shrink-0 bg-[#F4EFE6] border border-[#ECE5DA] overflow-hidden rounded-sm">
                 <Image
-                  src={item.image}
+                  src={item.image || '/placeholder-artwork.svg'}
                   alt={item.title}
                   fill
                   className="object-cover"

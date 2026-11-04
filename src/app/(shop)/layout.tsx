@@ -3,22 +3,14 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/layout/CartDrawer';
 import { CookieNotice } from '@/components/common/CookieNotice';
-import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ShopLayout({
+export default function ShopLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  let settings = null;
-  try {
-    settings = await prisma.siteSettings.findFirst();
-  } catch {
-    // Fallback if settings not yet loaded
-  }
-
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF7EE] text-[#231C10]">
       <Header />
@@ -31,4 +23,3 @@ export default async function ShopLayout({
     </div>
   );
 }
-

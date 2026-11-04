@@ -108,7 +108,7 @@ export function CartDrawer() {
                   {/* Thumbnail */}
                   <div className="relative w-20 h-24 shrink-0 bg-[#F4EFE6] border border-[#ECE5DA] overflow-hidden">
                     <Image
-                      src={item.image}
+                      src={item.image || '/placeholder-artwork.svg'}
                       alt={item.title}
                       fill
                       className="object-cover"

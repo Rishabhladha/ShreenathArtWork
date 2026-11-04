@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, cache } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -13,12 +13,21 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
+// Deduplicate database queries across generateMetadata and ProductDetailPage
+const getProduct = cache(async (slug: string) => {
+  return prisma.product.findUnique({
+    where: { slug },
+    include: {
+      category: true,
+      images: { orderBy: { displayOrder: 'asc' } },
+      variants: { orderBy: { price: 'asc' } },
+    },
+  });
+});
+
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: { images: true, variants: { orderBy: { price: 'asc' }, take: 1 } },
-  });
+  const product = await getProduct(slug);
 
   if (!product) return {};
 
@@ -38,27 +47,21 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-export default async function ProductDetailPage({ params }: ProductPageProps) {
-  const { slug } = await params;
-
-  const product = await prisma.product.findUnique({
-    where: { slug },
-    include: {
-      category: true,
-      images: { orderBy: { displayOrder: 'asc' } },
-      variants: { orderBy: { price: 'asc' } },
-    },
-  });
-
-  if (!product || product.status === 'ARCHIVED') {
-    notFound();
-  }
-
-  // Related products from same category
+async function RelatedProductsSection({
+  categoryId,
+  productId,
+  categoryName,
+  categorySlug,
+}: {
+  categoryId: string;
+  productId: string;
+  categoryName: string;
+  categorySlug: string;
+}) {
   const relatedProducts = await prisma.product.findMany({
     where: {
-      categoryId: product.categoryId,
-      id: { not: product.id },
+      categoryId,
+      id: { not: productId },
       status: 'ACTIVE',
     },
     include: {
@@ -68,6 +71,77 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     },
     take: 3,
   });
+
+  if (relatedProducts.length === 0) return null;
+
+  return (
+    <section className="space-y-6 pt-12 border-t border-[#E2DACD]">
+      <div className="flex items-baseline justify-between">
+        <h2 className="font-serif text-2xl font-semibold text-[#262320]">
+          Related Paintings in {categoryName}
+        </h2>
+        <Link
+          href={`/catalog?category=${categorySlug}`}
+          className="text-xs text-[#C47820] hover:underline"
+        >
+          View Category
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {relatedProducts.map((p) => {
+          const defaultVar = p.variants.find((v) => v.isDefault) || p.variants[0];
+          const pImg = p.images[0]?.url || '/placeholder-artwork.svg';
+          const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
+
+          return (
+            <ProductCard
+              key={p.id}
+              id={p.id}
+              title={p.title}
+              slug={p.slug}
+              medium={p.medium}
+              categoryName={p.category.name}
+              price={defaultVar ? defaultVar.price : 0}
+              mrp={defaultVar?.mrp}
+              image={pImg}
+              stock={totalStock}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function RelatedProductsSkeleton() {
+  return (
+    <div className="pt-12 border-t border-[#E2DACD] space-y-6">
+      <div className="h-6 w-52 bg-[#E8DAC0]/70 rounded-xs animate-pulse" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-white border border-[#DEC99C] rounded-sm p-4 space-y-3 animate-pulse"
+          >
+            <div className="aspect-[4/5] bg-[#F5EFE4] rounded-sm w-full" />
+            <div className="h-4 w-20 bg-[#E8DAC0]/60 rounded-xs" />
+            <div className="h-5 w-3/4 bg-[#E8DAC0] rounded-xs" />
+            <div className="h-4 w-24 bg-[#DEC99C] rounded-xs" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default async function ProductDetailPage({ params }: ProductPageProps) {
+  const { slug } = await params;
+  const product = await getProduct(slug);
+
+  if (!product || product.status === 'ARCHIVED') {
+    notFound();
+  }
 
   const defaultVariant = product.variants.find((v) => v.isDefault) || product.variants[0];
   const primaryImg = product.images[0]?.url || '/placeholder-artwork.svg';
@@ -236,47 +310,16 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         {/* Collector Reviews Section */}
         <ReviewSection productId={product.id} />
 
-        {/* Related Paintings Section */}
-        {relatedProducts.length > 0 && (
-          <section className="space-y-6 pt-12 border-t border-[#E2DACD]">
-            <div className="flex items-baseline justify-between">
-              <h2 className="font-serif text-2xl font-semibold text-[#262320]">
-                Related Paintings in {product.category.name}
-              </h2>
-              <Link
-                href={`/catalog?category=${product.category.slug}`}
-                className="text-xs text-[#C47820] hover:underline"
-              >
-                View Category
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {relatedProducts.map((p) => {
-                const defaultVar = p.variants.find((v) => v.isDefault) || p.variants[0];
-                const pImg = p.images[0]?.url || '/placeholder-artwork.svg';
-                const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
-
-                return (
-                  <ProductCard
-                    key={p.id}
-                    id={p.id}
-                    title={p.title}
-                    slug={p.slug}
-                    medium={p.medium}
-                    categoryName={p.category.name}
-                    price={defaultVar ? defaultVar.price : 0}
-                    mrp={defaultVar?.mrp}
-                    image={pImg}
-                    stock={totalStock}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {/* Related Paintings Section (Streamed via Suspense) */}
+        <Suspense fallback={<RelatedProductsSkeleton />}>
+          <RelatedProductsSection
+            categoryId={product.categoryId}
+            productId={product.id}
+            categoryName={product.category.name}
+            categorySlug={product.category.slug}
+          />
+        </Suspense>
       </div>
     </>
   );
 }
-
