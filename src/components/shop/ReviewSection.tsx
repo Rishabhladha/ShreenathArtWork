@@ -94,7 +94,21 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       {/* Review List */}
       <div className="space-y-4">
         {loading ? (
-          <p className="text-xs text-[#8A8175]">Loading feedback...</p>
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-2 animate-pulse"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-3.5 w-24 bg-[#E8DAC0] rounded-xs" />
+                  <div className="h-3 w-16 bg-[#E8DAC0]/60 rounded-xs" />
+                </div>
+                <div className="h-3 w-full bg-[#E8DAC0]/40 rounded-xs" />
+                <div className="h-3 w-2/3 bg-[#E8DAC0]/40 rounded-xs" />
+              </div>
+            ))}
+          </div>
         ) : reviews.length === 0 ? (
           <div className="p-6 bg-[#FAF7F2] border border-[#ECE5DA] rounded-sm text-center space-y-2">
             <MessageSquare className="w-8 h-8 text-[#D1C6B4] mx-auto" />

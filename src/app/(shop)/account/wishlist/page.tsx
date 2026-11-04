@@ -61,7 +61,7 @@ export default function WishlistPage() {
                 className="relative block aspect-[4/5] bg-[#F4EFE6] overflow-hidden"
               >
                 <Image
-                  src={item.image}
+                  src={item.image || '/placeholder-artwork.svg'}
                   alt={item.title}
                   fill
                   className="object-cover"
