@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Plus, Trash2, Upload, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Upload, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { compressImageForUpload, uploadFileWithProgress } from '@/lib/image-compression';
 
 interface VariantInput {
   id?: string;
@@ -87,7 +88,15 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
     ]
   );
 
+  interface UploadProgressState {
+    stage: 'compressing' | 'uploading';
+    percent: number;
+    fileSizeKB?: number;
+    fileName?: string;
+  }
+
   const [uploading, setUploading] = useState(false);
+  const [uploadState, setUploadState] = useState<UploadProgressState | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -110,20 +119,41 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
 
     setUploading(true);
     setError(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
+    setUploadState({
+      stage: 'compressing',
+      percent: 0,
+      fileName: file.name,
+    });
 
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
+      // Step 1: Compress image on client side with real-time compression progress
+      const compression = await compressImageForUpload(file, {
+        onProgress: (progress) => {
+          setUploadState((prev) =>
+            prev ? { ...prev, stage: 'compressing', percent: Math.round(progress) } : null
+          );
+        },
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to upload image');
-      }
+      const compressedKB = Math.round(compression.compressedSize / 1024);
+
+      // Step 2: Switch to uploading state
+      setUploadState({
+        stage: 'uploading',
+        percent: 0,
+        fileSizeKB: compressedKB,
+        fileName: compression.file.name,
+      });
+
+      const formData = new FormData();
+      formData.append('file', compression.file);
+
+      // Step 3: Upload with real-time transfer progress tracking
+      const data = await uploadFileWithProgress('/api/upload', formData, (uploadPercent) => {
+        setUploadState((prev) =>
+          prev ? { ...prev, stage: 'uploading', percent: uploadPercent } : null
+        );
+      });
 
       setImages((prev) => [
         ...prev,
@@ -134,10 +164,20 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
           isPrimary: prev.length === 0,
         },
       ]);
+
+      if (compression.isCompressed) {
+        const origMB = (compression.originalSize / (1024 * 1024)).toFixed(2);
+        setSuccessMsg(
+          `Image optimized & uploaded! Reduced from ${origMB} MB to ${compressedKB} KB (-${compression.compressionRatio}%).`
+        );
+        setTimeout(() => setSuccessMsg(null), 6000);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Image upload failed');
     } finally {
       setUploading(false);
+      setUploadState(null);
+      e.target.value = '';
     }
   };
 
@@ -558,17 +598,68 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
               <h2 className="font-serif text-base font-semibold text-[#262320]">
                 Images ({images.length})
               </h2>
-              <label className="btn-secondary text-xs py-1.5 px-3 cursor-pointer flex items-center gap-1">
-                <Upload className="w-3.5 h-3.5" />
-                <span>{uploading ? 'Uploading...' : 'Upload'}</span>
+              <label
+                className={`btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 transition-all ${
+                  uploading ? 'opacity-70 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
+                }`}
+              >
+                {uploading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#A85A32]" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {uploadState
+                    ? `${uploadState.stage === 'compressing' ? 'Optimizing' : 'Uploading'} ${uploadState.percent}%`
+                    : 'Upload'}
+                </span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/svg+xml"
                   onChange={handleFileUpload}
+                  disabled={uploading}
                   className="hidden"
                 />
               </label>
             </div>
+
+            {/* Real-time Loading & Progress Bar State */}
+            {uploadState && (
+              <div className="p-3 bg-white border border-[#E2DACD] rounded-sm space-y-2 shadow-xs">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-[#262320] flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 text-[#A85A32] animate-spin shrink-0" />
+                    <span>
+                      {uploadState.stage === 'compressing'
+                        ? 'Compressing & converting to WebP...'
+                        : 'Uploading to gallery storage...'}
+                    </span>
+                  </span>
+                  <span className="font-mono font-semibold text-[#A85A32]">
+                    {uploadState.percent}%
+                  </span>
+                </div>
+
+                {/* Visual Progress Bar */}
+                <div className="w-full bg-[#EAE2D5] h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-[#A85A32] h-full rounded-full transition-all duration-150 ease-out"
+                    style={{ width: `${Math.max(4, uploadState.percent)}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-[#7A7165]">
+                  <span className="truncate max-w-[200px]" title={uploadState.fileName}>
+                    {uploadState.fileName || 'Artwork image'}
+                  </span>
+                  <span>
+                    {uploadState.stage === 'compressing'
+                      ? 'Resizing to max 1920px'
+                      : `${uploadState.fileSizeKB ?? ''} KB`}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               {images.map((img, idx) => (

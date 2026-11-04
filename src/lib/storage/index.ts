@@ -7,6 +7,7 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     const blob = await put(`artwork/${Date.now()}-${file.name}`, file, {
       access: 'public',
+      contentType: file.type || 'image/webp',
     });
     return { url: blob.url };
   }
@@ -27,4 +28,3 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   fs.writeFileSync(filepath, buffer);
   return { url: `/uploads/${filename}` };
 }
-
