@@ -5,7 +5,7 @@ import path from 'path';
 export async function uploadImage(file: File): Promise<{ url: string }> {
   // Check if Vercel Blob token is configured
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(`artwork/${Date.now()}-${file.name}`, file, {
+    const blob = await put(`artworks/${Date.now()}-${file.name}`, file, {
       access: 'public',
       contentType: file.type || 'image/webp',
     });
