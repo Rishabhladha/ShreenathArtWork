@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { ImageGallery } from '@/components/shop/ImageGallery';
 import { VariantSelector } from '@/components/shop/VariantSelector';
 import { ReviewSection } from '@/components/shop/ReviewSection';
+import { ReviewSectionSkeleton } from '@/components/shop/ReviewSectionSkeleton';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { ShieldCheck, Truck, RotateCcw, ChevronRight, Sparkles } from 'lucide-react';
 
@@ -233,8 +234,10 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        {/* Collector Reviews Section */}
-        <ReviewSection productId={product.id} />
+        {/* Collector Reviews Section with Suspense Streaming Fallback */}
+        <Suspense fallback={<ReviewSectionSkeleton />}>
+          <ReviewSection productId={product.id} />
+        </Suspense>
 
         {/* Related Paintings Section */}
         {relatedProducts.length > 0 && (
@@ -279,4 +282,3 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     </>
   );
 }
-

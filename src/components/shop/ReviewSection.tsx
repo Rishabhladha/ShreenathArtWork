@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { Star, MessageSquare } from 'lucide-react';
+import { Star, MessageSquare, RotateCw } from 'lucide-react';
+import { ReviewListSkeleton } from '@/components/shop/ReviewSectionSkeleton';
 
 interface ReviewItem {
   id: string;
@@ -21,6 +22,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   const { data: session } = useSession();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -28,14 +30,19 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchReviews = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch(`/api/reviews?productId=${productId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data.reviews || []);
+      if (!res.ok) {
+        throw new Error('Unable to retrieve reviews from the database.');
       }
-    } catch {
-      // Ignore
+      const data = await res.json();
+      setReviews(data.reviews || []);
+    } catch (err: unknown) {
+      setFetchError(
+        err instanceof Error ? err.message : 'Failed to fetch reviews from database.'
+      );
     } finally {
       setLoading(false);
     }
@@ -71,6 +78,8 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
       setMessage(data.message || 'Review submitted for moderation.');
       setComment('');
+      // Refresh reviews list
+      fetchReviews();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit review');
     } finally {
@@ -82,8 +91,13 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
     <section className="space-y-6 pt-8 border-t border-[#E2DACD]">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-serif text-2xl font-semibold text-[#262320]">
-            Collector Inquiries and Reviews
+          <h2 className="font-serif text-2xl font-semibold text-[#262320] flex items-center gap-2">
+            <span>Collector Inquiries and Reviews</span>
+            {!loading && reviews.length > 0 && (
+              <span className="text-xs font-sans font-medium px-2 py-0.5 rounded-full bg-[#FAF0DC] text-[#9E7205] border border-[#DEC99C]">
+                {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+              </span>
+            )}
           </h2>
           <p className="text-xs text-[#8A8175] mt-0.5">
             Verified feedback from collectors who acquired this painting.
@@ -91,10 +105,27 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
         </div>
       </div>
 
-      {/* Review List */}
+      {/* Review List Area: Shows loading skeleton while database query is running */}
       <div className="space-y-4">
         {loading ? (
-          <p className="text-xs text-[#8A8175]">Loading feedback...</p>
+          <ReviewListSkeleton count={3} />
+        ) : fetchError ? (
+          <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs text-[#5C554C] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <p className="font-medium text-[#8C2B2B]">{fetchError}</p>
+              <p className="text-[#8A8175]">
+                Please check your network connection or try refreshing the reviews.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchReviews}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#262320] bg-white border border-[#DEC99C] rounded-xs hover:border-[#B8860B] transition-colors self-start sm:self-auto cursor-pointer"
+            >
+              <RotateCw className="w-3.5 h-3.5 text-[#C47820]" />
+              <span>Retry</span>
+            </button>
+          </div>
         ) : reviews.length === 0 ? (
           <div className="p-6 bg-[#FAF7F2] border border-[#ECE5DA] rounded-sm text-center space-y-2">
             <MessageSquare className="w-8 h-8 text-[#D1C6B4] mx-auto" />
@@ -202,4 +233,3 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
     </section>
   );
 }
-
