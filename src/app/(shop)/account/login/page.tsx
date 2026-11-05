@@ -40,8 +40,8 @@ function LoginForm() {
         setError('Invalid email address or password.');
         setSubmitting(false);
       } else {
-        router.push(callbackUrl);
-        router.refresh();
+        // Use hard navigation so the browser immediately sends the new session cookies to the server
+        window.location.href = callbackUrl;
       }
     } catch {
       setError('An error occurred during sign in. Please try again.');

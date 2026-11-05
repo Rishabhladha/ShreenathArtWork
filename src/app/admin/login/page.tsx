@@ -44,8 +44,8 @@ function AdminLoginForm() {
         setError('Invalid admin credentials. Please verify your email and password.');
         setSubmitting(false);
       } else {
-        router.push(callbackUrl);
-        router.refresh();
+        // Use hard navigation so the browser immediately sends the new session cookies to the server
+        window.location.href = callbackUrl;
       }
     } catch {
       setError('An unexpected error occurred during admin authentication.');

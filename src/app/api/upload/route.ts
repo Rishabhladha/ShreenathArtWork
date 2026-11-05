@@ -28,14 +28,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const maxSize = 8 * 1024 * 1024; // 8MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File size exceeds maximum allowed limit of 8MB.' },
-        { status: 400 }
-      );
-    }
-
+    // Process and store the image (optimized on the client before arrival)
     const result = await uploadImage(file);
     return NextResponse.json({ success: true, url: result.url });
   } catch (error) {
@@ -43,4 +36,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
   }
 }
-

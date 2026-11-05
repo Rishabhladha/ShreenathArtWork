@@ -70,7 +70,7 @@ export default async function HomePage() {
                 <div className="p-3 sm:p-4 bg-[#231C10] border-2 border-[#C59B27] rounded-sm shadow-2xl transition-transform duration-300 group-hover:scale-[1.01]">
                   <div className="relative aspect-[3/4] overflow-hidden rounded-xs bg-[#1C160E] border border-[#DEC99C]/60">
                     <Image
-                      src="/image/shreenathji-shrine.png"
+                      src="https://u3j1809ecuiuxa6g.public.blob.vercel-storage.com/artworks/shreenathji-shrine.webp"
                       alt="Jeweled Shreenathji Shrine with Lotus Offerings"
                       fill
                       priority

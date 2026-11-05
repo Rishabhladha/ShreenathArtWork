@@ -8,8 +8,9 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
 
   // Check if Vercel Blob token is configured
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(`artwork/${filename}`, file, {
+    const blob = await put(`artworks/${filename}`, file, {
       access: 'public',
+      contentType: file.type || 'image/webp',
     });
     return { url: blob.url };
   }
@@ -34,4 +35,3 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   fs.writeFileSync(filepath, buffer);
   return { url: `/uploads/${filename}` };
 }
-
