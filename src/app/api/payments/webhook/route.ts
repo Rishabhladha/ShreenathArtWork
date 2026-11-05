@@ -29,6 +29,32 @@ export async function POST(req: Request) {
         });
 
         if (paymentRecord && paymentRecord.order.paymentStatus !== 'PAID') {
+          // If the order was already cancelled (e.g. timeout or user cancelled), do not falsely confirm without inventory
+          if (
+            paymentRecord.order.status === 'CANCELLED' ||
+            paymentRecord.order.paymentStatus === 'CANCELLED'
+          ) {
+            await prisma.$transaction(async (tx) => {
+              await tx.payment.update({
+                where: { id: paymentRecord.id },
+                data: {
+                  status: 'PAID',
+                  providerPaymentId: paymentId,
+                },
+              });
+
+              await tx.orderStatusHistory.create({
+                data: {
+                  orderId: paymentRecord.orderId,
+                  status: 'CANCELLED',
+                  note: `Late payment received (${paymentId}) via Webhook for cancelled order. Requires review or refund.`,
+                  changedBy: 'WEBHOOK',
+                },
+              });
+            });
+            return NextResponse.json({ status: 'ok', warning: 'Payment captured for cancelled order' });
+          }
+
           await prisma.$transaction(async (tx) => {
             await tx.order.update({
               where: { id: paymentRecord.orderId },

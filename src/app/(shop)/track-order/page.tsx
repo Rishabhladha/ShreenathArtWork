@@ -26,23 +26,31 @@ export default async function TrackOrderPage({ searchParams }: TrackOrderProps) 
   let errorMsg = null;
 
   if (orderNumber) {
-    order = await prisma.order.findUnique({
-      where: { orderNumber: orderNumber.trim() },
-      include: {
-        items: true,
-        statusHistory: { orderBy: { createdAt: 'asc' } },
-      },
-    });
+    if (!contact || !contact.trim()) {
+      errorMsg = 'Please enter both your Order Reference Number and matching Customer Email or Mobile.';
+      order = null;
+    } else {
+      order = await prisma.order.findUnique({
+        where: { orderNumber: orderNumber.trim() },
+        include: {
+          items: true,
+          statusHistory: { orderBy: { createdAt: 'asc' } },
+        },
+      });
 
-    if (!order) {
-      errorMsg = `No order found with number "${orderNumber}". Please verify your order confirmation.`;
-    } else if (contact) {
-      const cleanContact = contact.trim().toLowerCase();
-      const emailMatches = order.customerEmail.toLowerCase() === cleanContact;
-      const phoneMatches = order.customerPhone.includes(cleanContact);
-      if (!emailMatches && !phoneMatches) {
-        errorMsg = 'The email or phone provided does not match our records for this order.';
-        order = null;
+      if (!order) {
+        errorMsg = `No order found with number "${orderNumber}". Please verify your order confirmation.`;
+      } else {
+        const cleanContact = contact.trim().toLowerCase();
+        const emailMatches = order.customerEmail.toLowerCase() === cleanContact;
+        const cleanPhone = cleanContact.replace(/\D/g, '');
+        const orderPhoneClean = order.customerPhone.replace(/\D/g, '');
+        const phoneMatches = cleanPhone.length >= 10 && orderPhoneClean.endsWith(cleanPhone.slice(-10));
+
+        if (!emailMatches && !phoneMatches) {
+          errorMsg = 'The email or phone provided does not match our records for this order.';
+          order = null;
+        }
       }
     }
   }
@@ -97,12 +105,13 @@ export default async function TrackOrderPage({ searchParams }: TrackOrderProps) 
               />
             </div>
             <div className="space-y-1">
-              <label className="block text-xs text-[#5C554C]">Customer Email or Mobile (Optional)</label>
+              <label className="block text-xs text-[#5C554C]">Customer Email or Mobile *</label>
               <input
                 type="text"
                 name="contact"
+                required
                 defaultValue={contact || ''}
-                placeholder="Email or 10-digit phone"
+                placeholder="Email or 10-digit mobile number"
                 className="w-full px-3 py-2 text-xs bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
               />
             </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Star, MessageSquare } from 'lucide-react';
@@ -27,23 +27,28 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchReviews = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/reviews?productId=${productId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReviews(data.reviews || []);
-      }
-    } catch {
-      // Ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [productId]);
-
   useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+    let ignore = false;
+    async function loadReviews() {
+      try {
+        const res = await fetch(`/api/reviews?productId=${productId}`);
+        if (res.ok && !ignore) {
+          const data = await res.json();
+          setReviews(data.reviews || []);
+        }
+      } catch {
+        // Ignore
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+    loadReviews();
+    return () => {
+      ignore = true;
+    };
+  }, [productId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

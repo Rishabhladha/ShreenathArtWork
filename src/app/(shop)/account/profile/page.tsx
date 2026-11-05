@@ -150,6 +150,49 @@ export default async function CustomerProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Saved Delivery Addresses */}
+      <div className="space-y-4 pt-4 border-t border-[#E2DACD]">
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-serif text-xl font-semibold text-[#262320]">
+            Saved Delivery Addresses ({user?.addresses?.length || 0})
+          </h2>
+        </div>
+
+        {!user?.addresses || user.addresses.length === 0 ? (
+          <div className="p-6 bg-[#FAF7F2] border border-[#ECE5DA] rounded-sm text-center text-xs text-[#5C554C]">
+            <MapPin className="w-6 h-6 text-[#8A8175] mx-auto mb-2 opacity-50" />
+            <p>No saved delivery addresses on file.</p>
+            <p className="text-[11px] text-[#8A8175] mt-1">
+              Your addresses are automatically saved and associated with your account when you checkout.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {user.addresses.map((addr) => (
+              <div
+                key={addr.id}
+                className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs space-y-1 relative"
+              >
+                {addr.isDefault && (
+                  <span className="inline-block px-1.5 py-0.5 rounded-sm bg-[#EAE2D5] text-[#262320] text-[10px] font-semibold border border-[#D1C6B4] mb-1">
+                    Default
+                  </span>
+                )}
+                <p className="font-semibold text-[#262320]">{addr.name}</p>
+                <p className="text-[#5C554C] leading-relaxed">
+                  {addr.addressLine1}
+                  {addr.addressLine2 ? `, ${addr.addressLine2}` : ''}
+                  <br />
+                  {addr.landmark ? `Landmark: ${addr.landmark}, ` : ''}
+                  {addr.city}, {addr.state} - {addr.postalCode}
+                </p>
+                <p className="text-[#8A8175] pt-1">Phone: {addr.phone}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

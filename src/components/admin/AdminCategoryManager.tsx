@@ -63,6 +63,24 @@ export function AdminCategoryManager({ initialCategories }: { initialCategories:
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/categories?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete category');
+      }
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+      router.refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error deleting category');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Categories List */}
@@ -84,6 +102,15 @@ export function AdminCategoryManager({ initialCategories }: { initialCategories:
                   Order: {c.displayOrder} | {c._count.products} painting(s) cataloged
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={() => handleDelete(c.id, c.name)}
+                className="p-1.5 text-[#8A8175] hover:text-[#8C2B2B] hover:bg-[#FAF0F0] rounded-sm transition-colors"
+                title="Delete category"
+                aria-label={`Delete category ${c.name}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>

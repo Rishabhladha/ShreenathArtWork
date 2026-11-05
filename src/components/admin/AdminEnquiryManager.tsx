@@ -1,20 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Sparkles, Check, Clock, Phone, MapPin } from 'lucide-react';
+import { ContactMessage, CustomOrderRequest, InquiryStatus } from '@prisma/client';
 
 export function AdminEnquiryManager({
   messages,
   customOrders,
 }: {
-  messages: any[];
-  customOrders: any[];
+  messages: ContactMessage[];
+  customOrders: CustomOrderRequest[];
 }) {
   const [tab, setTab] = useState<'contact' | 'custom'>('custom');
   const [itemsList, setItemsList] = useState({ contact: messages, custom: customOrders });
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const handleUpdate = async (type: 'contact' | 'custom_order', id: string, newStatus: string) => {
+  const handleUpdate = async (type: 'contact' | 'custom_order', id: string, newStatus: InquiryStatus) => {
     setSavingId(id);
     try {
       const res = await fetch('/api/admin/enquiries', {
@@ -109,7 +109,7 @@ export function AdminEnquiryManager({
                     </span>
                     <select
                       value={item.status}
-                      onChange={(e) => handleUpdate('custom_order', item.id, e.target.value)}
+                      onChange={(e) => handleUpdate('custom_order', item.id, e.target.value as InquiryStatus)}
                       disabled={savingId === item.id}
                       className="px-2 py-1 text-[11px] bg-white border border-[#E2DACD] rounded-sm text-[#262320]"
                     >
@@ -175,7 +175,7 @@ export function AdminEnquiryManager({
                   <div className="flex items-center gap-2">
                     <select
                       value={msg.status}
-                      onChange={(e) => handleUpdate('contact', msg.id, e.target.value)}
+                      onChange={(e) => handleUpdate('contact', msg.id, e.target.value as InquiryStatus)}
                       disabled={savingId === msg.id}
                       className="px-2 py-1 text-[11px] bg-white border border-[#E2DACD] rounded-sm text-[#262320]"
                     >

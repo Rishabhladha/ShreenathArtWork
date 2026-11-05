@@ -1,6 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
+import { Prisma, OrderStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import { requireAdminSession } from '@/lib/auth';
 import { formatPrice } from '@/lib/money';
 import { Eye, Download, Search, Filter } from 'lucide-react';
 
@@ -14,17 +17,22 @@ interface OrdersPageProps {
 }
 
 export default async function AdminOrdersPage({ searchParams }: OrdersPageProps) {
+  const session = await requireAdminSession();
+  if (!session) {
+    redirect('/admin/login');
+  }
+
   const { status, paymentStatus, paymentMethod, search } = await searchParams;
 
-  const where: any = {};
+  const where: Prisma.OrderWhereInput = {};
   if (status) {
-    where.status = status;
+    where.status = status as OrderStatus;
   }
   if (paymentStatus) {
-    where.paymentStatus = paymentStatus;
+    where.paymentStatus = paymentStatus as PaymentStatus;
   }
   if (paymentMethod) {
-    where.paymentMethod = paymentMethod;
+    where.paymentMethod = paymentMethod as PaymentMethod;
   }
   if (search) {
     where.OR = [

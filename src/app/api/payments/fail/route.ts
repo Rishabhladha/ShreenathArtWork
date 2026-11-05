@@ -13,17 +13,28 @@ export async function POST(req: Request) {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: true },
+      include: { items: true, couponRedemptions: true },
     });
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Only cancel if order is not already paid
-    if (order.paymentStatus !== 'PAID') {
+    // Only online payment orders can be failed through payment gateway failure endpoint
+    if (order.paymentMethod !== 'ONLINE') {
+      return NextResponse.json(
+        { error: 'Only online payment orders can be failed or cancelled via payment gateway' },
+        { status: 400 }
+      );
+    }
+
+    // Idempotency: Only cancel and restore stock if order is in CREATED status
+    if (
+      order.status !== 'CANCELLED' &&
+      order.paymentStatus === 'CREATED'
+    ) {
       await prisma.$transaction(async (tx) => {
-        // Release reserved stock back to inventory
+        // 1. Release reserved stock back to inventory
         for (const item of order.items) {
           await tx.productVariant.update({
             where: { id: item.variantId },
@@ -31,6 +42,19 @@ export async function POST(req: Request) {
           });
         }
 
+        // 2. Restore coupon usage if coupon was redeemed
+        for (const red of order.couponRedemptions) {
+          await tx.coupon.update({
+            where: { id: red.couponId },
+            data: { usageCount: { decrement: 1 } },
+          });
+        }
+
+        await tx.couponRedemption.deleteMany({
+          where: { orderId: order.id },
+        });
+
+        // 3. Mark order and payments as cancelled/failed
         await tx.order.update({
           where: { id: order.id },
           data: {

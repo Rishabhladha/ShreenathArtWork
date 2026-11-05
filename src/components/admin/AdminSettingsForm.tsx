@@ -4,7 +4,28 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export function AdminSettingsForm({ initialSettings }: { initialSettings: any }) {
+export interface SiteSettingsData {
+  businessName?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  openingHours?: string | null;
+  freeShippingThreshold?: number | null;
+  standardShippingCharge?: number | null;
+  gstEnabled?: boolean | null;
+  gstRatePercent?: number | null;
+  codEnabled?: boolean | null;
+  paymentModeDisplay?: string | null;
+  announcementBarActive?: boolean | null;
+  announcementBarText?: string | null;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  policyTerms?: string | null;
+  policyPrivacy?: string | null;
+  policyShipping?: string | null;
+}
+
+export function AdminSettingsForm({ initialSettings }: { initialSettings: SiteSettingsData | null }) {
   const router = useRouter();
 
   const [businessName, setBusinessName] = useState(initialSettings?.businessName || 'SHREENATH ART WORK');
@@ -28,6 +49,11 @@ export function AdminSettingsForm({ initialSettings }: { initialSettings: any })
   const [announcementBarText, setAnnouncementBarText] = useState(
     initialSettings?.announcementBarText || 'Free insured delivery across India on all paintings above Rs 5,000.'
   );
+  const [instagramUrl, setInstagramUrl] = useState(initialSettings?.instagramUrl || '');
+  const [facebookUrl, setFacebookUrl] = useState(initialSettings?.facebookUrl || '');
+  const [policyTerms, setPolicyTerms] = useState(initialSettings?.policyTerms || '');
+  const [policyPrivacy, setPolicyPrivacy] = useState(initialSettings?.policyPrivacy || '');
+  const [policyShipping, setPolicyShipping] = useState(initialSettings?.policyShipping || '');
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -57,6 +83,11 @@ export function AdminSettingsForm({ initialSettings }: { initialSettings: any })
           paymentModeDisplay,
           announcementBarActive,
           announcementBarText,
+          instagramUrl,
+          facebookUrl,
+          policyTerms,
+          policyPrivacy,
+          policyShipping,
         }),
       });
 
@@ -258,6 +289,74 @@ export function AdminSettingsForm({ initialSettings }: { initialSettings: any })
             onChange={(e) => setAnnouncementBarText(e.target.value)}
             className="w-full px-2.5 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm text-[#262320]"
           />
+        </div>
+      </div>
+
+      {/* Social Media Links */}
+      <div className="p-6 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-4">
+        <h2 className="font-serif text-base font-semibold text-[#262320]">
+          Social Media Links
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="block text-[#5C554C]">Instagram Profile URL</label>
+            <input
+              type="url"
+              placeholder="https://instagram.com/shreenathartwork"
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm text-[#262320]"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-[#5C554C]">Facebook Page URL</label>
+            <input
+              type="url"
+              placeholder="https://facebook.com/shreenathartwork"
+              value={facebookUrl}
+              onChange={(e) => setFacebookUrl(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm text-[#262320]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Legal & Store Policies */}
+      <div className="p-6 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-4">
+        <h2 className="font-serif text-base font-semibold text-[#262320]">
+          Legal & Store Policies
+        </h2>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <label className="block text-[#5C554C]">Terms & Conditions Policy</label>
+            <textarea
+              rows={4}
+              placeholder="Terms and conditions copy..."
+              value={policyTerms}
+              onChange={(e) => setPolicyTerms(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm text-[#262320] font-sans text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-[#5C554C]">Privacy Policy</label>
+            <textarea
+              rows={4}
+              placeholder="Privacy policy copy..."
+              value={policyPrivacy}
+              onChange={(e) => setPolicyPrivacy(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm text-[#262320] font-sans text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-[#5C554C]">Shipping & Returns Policy</label>
+            <textarea
+              rows={4}
+              placeholder="Shipping & returns policy copy..."
+              value={policyShipping}
+              onChange={(e) => setPolicyShipping(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm text-[#262320] font-sans text-xs"
+            />
+          </div>
         </div>
       </div>
 

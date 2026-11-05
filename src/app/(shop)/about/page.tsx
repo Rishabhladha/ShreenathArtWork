@@ -31,7 +31,7 @@ export default function AboutPage() {
         </h2>
         <div className="space-y-3 text-xs sm:text-sm text-[#5C554C] leading-relaxed">
           <p>
-            The town of Nathdwara was established in the seventeenth century [Year founded] when the sacred deity of Shreenathji was brought from Mount Govardhan to Mewar. Along with the shrine came master craftsmen, sculptors, and painters whose devotional service was to create textile backdrops known as Pichwai (literally, "that which hangs behind").
+            The town of Nathdwara was established in the seventeenth century when the sacred deity of Shreenathji was brought from Mount Govardhan to Mewar. Along with the shrine came master craftsmen, sculptors, and painters whose devotional service was to create textile backdrops known as Pichwai (literally, &quot;that which hangs behind&quot;).
           </p>
           <p>
             For generations, families in Nathdwara have preserved this sacred art. SHREENATH ART WORK was founded to provide collectors across India direct access to authentic devotional paintings without intermediaries, maintaining traditional techniques and fair remuneration for artists.

@@ -1,23 +1,37 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
+
+const subscribe = (callback: () => void) => {
+  window.addEventListener('storage', callback);
+  return () => window.removeEventListener('storage', callback);
+};
 
 export function CookieNotice() {
-  const [acknowledged, setAcknowledged] = useState(true);
+  const hasConsent = useSyncExternalStore(
+    subscribe,
+    () => {
+      try {
+        return Boolean(localStorage.getItem('shreenath_cookie_consent'));
+      } catch {
+        return true;
+      }
+    },
+    () => true
+  );
 
-  useEffect(() => {
-    const hasSeen = localStorage.getItem('shreenath_cookie_consent');
-    if (!hasSeen) {
-      setAcknowledged(false);
-    }
-  }, []);
+  const [dismissed, setDismissed] = useState(false);
 
   const handleDismiss = () => {
-    localStorage.setItem('shreenath_cookie_consent', 'true');
-    setAcknowledged(true);
+    try {
+      localStorage.setItem('shreenath_cookie_consent', 'true');
+    } catch {
+      // Ignore
+    }
+    setDismissed(true);
   };
 
-  if (acknowledged) return null;
+  if (hasConsent || dismissed) return null;
 
   return (
     <aside aria-label="Privacy and cookies" className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 p-4 bg-[#FAF7F2] border border-[#D1C6B4] shadow-md rounded-sm text-xs text-[#5C554C]">

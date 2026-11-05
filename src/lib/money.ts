@@ -50,3 +50,31 @@ export function calculateOrderTotals(params: {
   };
 }
 
+export function calculateCouponDiscount(
+  coupon: {
+    discountType: 'PERCENT' | 'FLAT' | string;
+    discountValue: number;
+    minOrderValue?: number | null;
+    maxDiscount?: number | null;
+  },
+  subtotal: number
+): number {
+  if (subtotal <= 0) return 0;
+  if (coupon.minOrderValue && subtotal < coupon.minOrderValue) {
+    return 0;
+  }
+
+  let discount = 0;
+  if (coupon.discountType === 'PERCENT') {
+    const safePercent = Math.min(100, Math.max(0, coupon.discountValue));
+    discount = Math.round((subtotal * safePercent) / 100);
+    if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+      discount = coupon.maxDiscount;
+    }
+  } else {
+    discount = Math.min(coupon.discountValue, subtotal);
+  }
+
+  return Math.max(0, Math.min(discount, subtotal));
+}
+

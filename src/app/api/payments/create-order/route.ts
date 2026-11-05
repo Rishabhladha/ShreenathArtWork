@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import prisma from '@/lib/prisma';
 import { getServerAuthSession } from '@/lib/auth';
-import { checkoutAddressSchema } from '@/lib/validators';
-import { calculateOrderTotals } from '@/lib/money';
+import { checkoutAddressSchema, checkoutItemsSchema } from '@/lib/validators';
+import { calculateOrderTotals, calculateCouponDiscount } from '@/lib/money';
 import { getPaymentProvider } from '@/lib/payments';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { sendOrderConfirmationEmail } from '@/lib/email';
@@ -16,7 +17,7 @@ interface ClientItem {
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'local';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
     const rateCheck = checkRateLimit(`checkout:${ip}`, 10, 60);
     if (!rateCheck.success) {
       return NextResponse.json(
@@ -26,11 +27,16 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { items, address } = body as { items: ClientItem[]; address: unknown };
+    const { items, address } = body as { items: unknown; address: unknown };
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+    const itemsParsed = checkoutItemsSchema.safeParse(items);
+    if (!itemsParsed.success) {
+      return NextResponse.json(
+        { error: itemsParsed.error.issues[0]?.message || 'Cart contains invalid items or quantities' },
+        { status: 400 }
+      );
     }
+    const validatedItems = itemsParsed.data;
 
     const addressParsed = checkoutAddressSchema.safeParse(address);
     if (!addressParsed.success) {
@@ -60,8 +66,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Aggregate requested quantities by variantId to handle multiple or duplicate items safely
+    const aggregatedQuantities = new Map<string, number>();
+    for (const item of validatedItems) {
+      aggregatedQuantities.set(
+        item.variantId,
+        (aggregatedQuantities.get(item.variantId) || 0) + item.quantity
+      );
+    }
+
     // Verify all products and variants from database directly
-    const variantIds = items.map((i) => i.variantId);
+    const variantIds = Array.from(aggregatedQuantities.keys());
     const dbVariants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
       include: { product: true },
@@ -69,16 +84,22 @@ export async function POST(req: Request) {
 
     const variantMap = new Map(dbVariants.map((v) => [v.id, v]));
 
-    // Check stock availability
-    for (const item of items) {
-      const v = variantMap.get(item.variantId);
+    // Check stock availability and active product status against aggregated quantities
+    for (const [variantId, totalQty] of aggregatedQuantities.entries()) {
+      const v = variantMap.get(variantId);
       if (!v) {
         return NextResponse.json(
           { error: 'One or more items in your cart is no longer available.' },
           { status: 400 }
         );
       }
-      if (v.stock < item.quantity) {
+      if (v.product.status !== 'ACTIVE') {
+        return NextResponse.json(
+          { error: `"${v.product.title}" is currently not available for purchase.` },
+          { status: 400 }
+        );
+      }
+      if (v.stock < totalQty) {
         return NextResponse.json(
           {
             error: `Insufficient stock for "${v.product.title}" (${v.size}, ${v.frame}). Only ${v.stock} remaining.`,
@@ -90,7 +111,7 @@ export async function POST(req: Request) {
 
     // Compute subtotal from DB prices
     let subtotal = 0;
-    const orderItemsData = items.map((item) => {
+    const orderItemsData = validatedItems.map((item) => {
       const v = variantMap.get(item.variantId)!;
       const lineTotal = v.price * item.quantity;
       subtotal += lineTotal;
@@ -116,22 +137,20 @@ export async function POST(req: Request) {
       });
 
       if (
-        coupon &&
-        coupon.isActive &&
-        (!coupon.expiresAt || new Date() <= coupon.expiresAt) &&
-        (!coupon.usageLimit || coupon.usageCount < coupon.usageLimit) &&
-        subtotal >= coupon.minOrderValue
+        !coupon ||
+        !coupon.isActive ||
+        (coupon.expiresAt && new Date() > coupon.expiresAt) ||
+        (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) ||
+        subtotal < coupon.minOrderValue
       ) {
-        if (coupon.discountType === 'PERCENT') {
-          discount = Math.round((subtotal * coupon.discountValue) / 100);
-          if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-            discount = coupon.maxDiscount;
-          }
-        } else {
-          discount = Math.min(coupon.discountValue, subtotal);
-        }
-        couponRecord = { id: coupon.id, code: coupon.code };
+        return NextResponse.json(
+          { error: `Coupon "${shippingInfo.couponCode}" is invalid, expired, or minimum cart value is not met.` },
+          { status: 400 }
+        );
       }
+
+      discount = calculateCouponDiscount(coupon, subtotal);
+      couponRecord = { id: coupon.id, code: coupon.code };
     }
 
     // Calculate totals
@@ -144,20 +163,26 @@ export async function POST(req: Request) {
       gstRatePercent,
     });
 
-    // Human-friendly order number: ORD-2026-XXXXXX
-    const count = await prisma.order.count();
-    const orderNumber = `ORD-2026-${String(count + 1001).padStart(6, '0')}`;
+    // Collision-free unique order number: ORD-2026-XXXXXXXX
+    const randomSuffix = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const orderNumber = `ORD-2026-${randomSuffix}`;
 
     // Execute in a database transaction: reserve stock and create order
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Decrement stock
-      for (const item of items) {
-        await tx.productVariant.update({
-          where: { id: item.variantId },
+      // 1. Decrement stock atomically with gte guard using aggregated quantities
+      for (const [variantId, totalQty] of aggregatedQuantities.entries()) {
+        const updateRes = await tx.productVariant.updateMany({
+          where: {
+            id: variantId,
+            stock: { gte: totalQty },
+          },
           data: {
-            stock: { decrement: item.quantity },
+            stock: { decrement: totalQty },
           },
         });
+        if (updateRes.count === 0) {
+          throw new Error(`Insufficient stock for variant ${variantId}`);
+        }
       }
 
       // 2. Increment coupon usage if used
@@ -219,6 +244,34 @@ export async function POST(req: Request) {
         },
       });
 
+      // 4. Save address to Address model if authenticated user
+      if (userId) {
+        const existingAddr = await tx.address.findFirst({
+          where: {
+            userId,
+            addressLine1: shippingInfo.addressLine1,
+            postalCode: shippingInfo.postalCode,
+          },
+        });
+        if (!existingAddr) {
+          const userAddressCount = await tx.address.count({ where: { userId } });
+          await tx.address.create({
+            data: {
+              userId,
+              name: shippingInfo.customerName,
+              phone: shippingInfo.customerPhone,
+              addressLine1: shippingInfo.addressLine1,
+              addressLine2: shippingInfo.addressLine2 || null,
+              landmark: shippingInfo.landmark || null,
+              city: shippingInfo.city,
+              state: shippingInfo.state,
+              postalCode: shippingInfo.postalCode,
+              isDefault: userAddressCount === 0,
+            },
+          });
+        }
+      }
+
       return newOrder;
     });
 
@@ -262,7 +315,35 @@ export async function POST(req: Request) {
 
     // Handle Online Payment (Razorpay Simulator or Real Razorpay)
     const provider = getPaymentProvider();
-    const paymentOrder = await provider.createOrder(result.total, 'INR', result.orderNumber);
+    let paymentOrder;
+    try {
+      paymentOrder = await provider.createOrder(result.total, 'INR', result.orderNumber);
+    } catch (providerError) {
+      console.error('Payment gateway order creation failed, rolling back reserved stock:', providerError);
+      await prisma.$transaction(async (tx) => {
+        for (const [variantId, totalQty] of aggregatedQuantities.entries()) {
+          await tx.productVariant.update({
+            where: { id: variantId },
+            data: { stock: { increment: totalQty } },
+          });
+        }
+        if (couponRecord) {
+          await tx.coupon.update({
+            where: { id: couponRecord.id },
+            data: { usageCount: { decrement: 1 } },
+          });
+        }
+        await tx.order.update({
+          where: { id: result.id },
+          data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+        });
+      });
+
+      return NextResponse.json(
+        { error: 'Payment gateway initialization failed. Your reserved items have been restored. Please try again.' },
+        { status: 502 }
+      );
+    }
 
     // Save payment intent in DB
     await prisma.payment.create({

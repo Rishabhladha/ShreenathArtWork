@@ -4,7 +4,17 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Star, Check, X, Trash2 } from 'lucide-react';
 
-export function AdminReviewModerator({ initialReviews }: { initialReviews: any[] }) {
+interface ReviewItem {
+  id: string;
+  rating: number;
+  comment: string;
+  isApproved: boolean;
+  createdAt: string | Date;
+  product: { title: string; slug: string };
+  user: { name?: string | null; email?: string | null };
+}
+
+export function AdminReviewModerator({ initialReviews }: { initialReviews: ReviewItem[] }) {
   const [reviews, setReviews] = useState(initialReviews);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -82,7 +92,7 @@ export function AdminReviewModerator({ initialReviews }: { initialReviews: any[]
               </div>
             </div>
 
-            <p className="text-[#5C554C] leading-relaxed italic">"{r.comment}"</p>
+            <p className="text-[#5C554C] leading-relaxed italic">&ldquo;{r.comment}&rdquo;</p>
 
             <p className="text-[11px] text-[#8A8175]">
               By {r.user.name || r.user.email} on{' '}

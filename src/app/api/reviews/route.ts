@@ -90,6 +90,21 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if user has already reviewed this product
+    const existingReview = await prisma.review.findFirst({
+      where: {
+        productId,
+        userId: session.user.id,
+      },
+    });
+
+    if (existingReview) {
+      return NextResponse.json(
+        { error: 'You have already submitted a review for this artwork.' },
+        { status: 409 }
+      );
+    }
+
     const review = await prisma.review.create({
       data: {
         productId,

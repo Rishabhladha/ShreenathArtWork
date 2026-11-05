@@ -1,7 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
+import { Prisma, ProductStatus } from '@prisma/client';
+import { requireAdminSession } from '@/lib/auth';
 import { formatPrice } from '@/lib/money';
 import { Plus, Search, Filter, Edit, Eye, Archive } from 'lucide-react';
 
@@ -14,9 +17,14 @@ interface ProductsPageProps {
 }
 
 export default async function AdminProductsPage({ searchParams }: ProductsPageProps) {
+  const session = await requireAdminSession();
+  if (!session) {
+    redirect('/admin/login');
+  }
+
   const { search, category, status } = await searchParams;
 
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
   if (search) {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
@@ -27,7 +35,7 @@ export default async function AdminProductsPage({ searchParams }: ProductsPagePr
     where.categoryId = category;
   }
   if (status) {
-    where.status = status;
+    where.status = status as ProductStatus;
   }
 
   const [products, categories] = await Promise.all([

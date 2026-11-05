@@ -34,6 +34,14 @@ export const couponApplySchema = z.object({
   subtotal: z.number().int().nonnegative(),
 });
 
+export const checkoutItemSchema = z.object({
+  productId: z.string().min(1, 'Product ID required'),
+  variantId: z.string().min(1, 'Variant ID required'),
+  quantity: z.number().int().positive('Quantity must be greater than zero').max(99, 'Quantity exceeds maximum limit'),
+});
+
+export const checkoutItemsSchema = z.array(checkoutItemSchema).min(1, 'Cart is empty');
+
 export const checkoutAddressSchema = z.object({
   customerName: z.string().min(2, 'Full name is required'),
   customerEmail: z.string().email('Valid email is required'),

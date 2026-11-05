@@ -3,9 +3,12 @@ import fs from 'fs';
 import path from 'path';
 
 export async function uploadImage(file: File): Promise<{ url: string }> {
+  const cleanName = path.basename(file.name).replace(/[^a-zA-Z0-9.-]/g, '_');
+  const filename = `${Date.now()}-${cleanName}`;
+
   // Check if Vercel Blob token is configured
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(`artwork/${Date.now()}-${file.name}`, file, {
+    const blob = await put(`artwork/${filename}`, file, {
       access: 'public',
     });
     return { url: blob.url };
@@ -20,8 +23,12 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const filename = `${Date.now()}-${cleanName}`;
+  const lowerName = cleanName.toLowerCase();
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+  if (!allowedExtensions.some((ext) => lowerName.endsWith(ext))) {
+    throw new Error('Unsupported image format.');
+  }
+
   const filepath = path.join(uploadsDir, filename);
 
   fs.writeFileSync(filepath, buffer);

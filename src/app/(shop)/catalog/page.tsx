@@ -53,8 +53,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const variantConditions: Prisma.ProductVariantWhereInput = {};
   if (minPrice !== undefined || maxPrice !== undefined) {
     const priceFilter: Prisma.IntFilter = {};
-    if (minPrice !== undefined) priceFilter.gte = minPrice;
-    if (maxPrice !== undefined) priceFilter.lte = maxPrice;
+    if (minPrice !== undefined) priceFilter.gte = minPrice * 100;
+    if (maxPrice !== undefined) priceFilter.lte = maxPrice * 100;
     variantConditions.price = priceFilter;
   }
   if (inStockOnly) {
@@ -65,47 +65,62 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     where.variants = { some: variantConditions };
   }
 
-  // Sorting
-  let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
-  if (currentSort === 'price_asc') {
-    orderBy = { variants: { _count: 'asc' } }; // fallback or sort client-side/via variant min
-  }
+  const categoriesPromise = prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: { displayOrder: 'asc' },
+  });
 
-  const [totalCount, products, categories] = await Promise.all([
-    prisma.product.count({ where }),
-    prisma.product.findMany({
+  let totalCount = 0;
+  let products: Array<
+    Prisma.ProductGetPayload<{
+      include: {
+        category: true;
+        images: true;
+        variants: true;
+      };
+    }>
+  > = [];
+
+  if (currentSort === 'price_asc' || currentSort === 'price_desc') {
+    const allMatching = await prisma.product.findMany({
       where,
       include: {
         category: true,
         images: { orderBy: { displayOrder: 'asc' } },
         variants: { orderBy: { price: 'asc' } },
       },
-      orderBy: currentSort === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' },
-      skip: (currentPage - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { displayOrder: 'asc' },
-    }),
-  ]);
-
-  // Sort by price if requested
-  if (currentSort === 'price_asc') {
-    products.sort((a, b) => {
+    });
+    totalCount = allMatching.length;
+    allMatching.sort((a, b) => {
       const minA = a.variants[0]?.price ?? 0;
       const minB = b.variants[0]?.price ?? 0;
-      return minA - minB;
+      return currentSort === 'price_asc' ? minA - minB : minB - minA;
     });
-  } else if (currentSort === 'price_desc') {
-    products.sort((a, b) => {
-      const minA = a.variants[0]?.price ?? 0;
-      const minB = b.variants[0]?.price ?? 0;
-      return minB - minA;
-    });
+    products = allMatching.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  } else {
+    const [count, items] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          images: { orderBy: { displayOrder: 'asc' } },
+          variants: { orderBy: { price: 'asc' } },
+        },
+        orderBy: currentSort === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' },
+        skip: (currentPage - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+    totalCount = count;
+    products = items;
   }
 
+  const categories = await categoriesPromise;
+
   const totalPages = Math.ceil(totalCount / pageSize);
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalCount);
 
   // Helper to build URL with search params
   const createFilterUrl = (overrides: Record<string, string | undefined>) => {
@@ -141,7 +156,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
               : 'All Devotional Paintings'}
           </h1>
           <span className="text-xs text-[#8A8175]">
-            Showing {products.length} of {totalCount} artworks
+            Showing {totalCount === 0 ? 0 : `${startItem}–${endItem}`} of {totalCount} artworks
           </span>
         </div>
         <p className="text-xs text-[#5C554C] max-w-2xl">
@@ -280,7 +295,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           {/* Sorting Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs">
             <span className="text-[#5C554C]">
-              {totalCount === 0 ? 'No paintings found' : `Showing 1 to ${products.length} of ${totalCount}`}
+              {totalCount === 0 ? 'No paintings found' : `Showing ${startItem}–${endItem} of ${totalCount} artworks`}
             </span>
 
             <div className="flex items-center gap-2">

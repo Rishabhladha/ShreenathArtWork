@@ -5,14 +5,27 @@ import Link from 'next/link';
 import { formatPrice } from '@/lib/money';
 import { Edit2, Check, X, AlertTriangle } from 'lucide-react';
 
-export function AdminInventoryManager({ initialVariants }: { initialVariants: any[] }) {
+interface InventoryVariant {
+  id: string;
+  sku: string;
+  size: string;
+  frame: string;
+  price: number;
+  stock: number;
+  product: {
+    title: string;
+    slug: string;
+  };
+}
+
+export function AdminInventoryManager({ initialVariants }: { initialVariants: InventoryVariant[] }) {
   const [variants, setVariants] = useState(initialVariants);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editStock, setEditStock] = useState<number>(0);
   const [editReason, setEditReason] = useState<string>('Workshop stock adjustment');
   const [saving, setSaving] = useState(false);
 
-  const startEdit = (v: any) => {
+  const startEdit = (v: InventoryVariant) => {
     setEditingId(v.id);
     setEditStock(v.stock);
     setEditReason('Physical count adjustment');

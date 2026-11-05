@@ -1,86 +1,81 @@
 import { describe, it, expect } from 'vitest';
-
-function applyCouponLogic(params: {
-  coupon: {
-    discountType: 'PERCENT' | 'FLAT';
-    discountValue: number;
-    minOrderValue: number;
-    maxDiscount?: number | null;
-  };
-  subtotal: number;
-}) {
-  const { coupon, subtotal } = params;
-  if (subtotal < coupon.minOrderValue) {
-    throw new Error('Minimum order value not met');
-  }
-
-  let discount = 0;
-  if (coupon.discountType === 'PERCENT') {
-    discount = Math.round((subtotal * coupon.discountValue) / 100);
-    if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-      discount = coupon.maxDiscount;
-    }
-  } else {
-    discount = Math.min(coupon.discountValue, subtotal);
-  }
-
-  return discount;
-}
+import { calculateCouponDiscount } from '../src/lib/money';
 
 describe('Coupon Application Rules', () => {
   it('applies percentage discount accurately', () => {
-    const discount = applyCouponLogic({
-      coupon: {
+    const discount = calculateCouponDiscount(
+      {
         discountType: 'PERCENT',
         discountValue: 10,
         minOrderValue: 500000,
         maxDiscount: 200000,
       },
-      subtotal: 600000, // Rs 6,000
-    });
+      600000 // Rs 6,000
+    );
 
     expect(discount).toBe(60000); // 10% of 600,000 = Rs 600
   });
 
   it('caps discount at maxDiscount limit', () => {
-    const discount = applyCouponLogic({
-      coupon: {
+    const discount = calculateCouponDiscount(
+      {
         discountType: 'PERCENT',
         discountValue: 10,
         minOrderValue: 500000,
         maxDiscount: 200000, // Rs 2,000 max
       },
-      subtotal: 3000000, // Rs 30,000
-    });
+      3000000 // Rs 30,000
+    );
 
     // 10% would be Rs 3,000, but capped at Rs 2,000
     expect(discount).toBe(200000);
   });
 
-  it('rejects coupon when cart value is below minOrderValue', () => {
-    expect(() =>
-      applyCouponLogic({
-        coupon: {
-          discountType: 'PERCENT',
-          discountValue: 10,
-          minOrderValue: 500000,
-        },
-        subtotal: 400000,
-      })
-    ).toThrow('Minimum order value not met');
+  it('returns 0 discount when cart value is below minOrderValue', () => {
+    const discount = calculateCouponDiscount(
+      {
+        discountType: 'PERCENT',
+        discountValue: 10,
+        minOrderValue: 500000,
+      },
+      400000
+    );
+    expect(discount).toBe(0);
   });
 
   it('applies flat rupee deduction correctly', () => {
-    const discount = applyCouponLogic({
-      coupon: {
+    const discount = calculateCouponDiscount(
+      {
         discountType: 'FLAT',
         discountValue: 50000, // Rs 500
         minOrderValue: 400000,
       },
-      subtotal: 450000,
-    });
+      450000
+    );
 
     expect(discount).toBe(50000);
+  });
+
+  it('guarantees discount never exceeds subtotal even with >100% or huge flat discount', () => {
+    // 150% discount attempt
+    const percentDiscount = calculateCouponDiscount(
+      {
+        discountType: 'PERCENT',
+        discountValue: 150,
+      },
+      100000 // Rs 1,000
+    );
+    expect(percentDiscount).toBe(100000); // Clamped to 100% (Rs 1,000)
+
+    // Huge flat discount attempt exceeding subtotal
+    const flatDiscount = calculateCouponDiscount(
+      {
+        discountType: 'FLAT',
+        discountValue: 500000, // Rs 5,000
+      },
+      200000 // Rs 2,000
+    );
+    expect(flatDiscount).toBe(200000); // Clamped to subtotal (Rs 2,000)
   });
 });
 

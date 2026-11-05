@@ -12,6 +12,9 @@ export class SimulatedRazorpayProvider implements PaymentProvider {
   private secret: string;
 
   constructor() {
+    if (process.env.NODE_ENV === 'production' && !process.env.SIMULATED_RAZORPAY_SECRET) {
+      throw new Error('SIMULATED_RAZORPAY_SECRET must be explicitly defined in production environment.');
+    }
     this.secret = process.env.SIMULATED_RAZORPAY_SECRET || 'simulated_secret_key_nathdwara_art';
   }
 
@@ -37,12 +40,31 @@ export class SimulatedRazorpayProvider implements PaymentProvider {
 
   async verifyPayment(payload: VerifyPaymentPayload): Promise<VerifyPaymentResult> {
     const { orderId, paymentId, signature } = payload;
-    const expectedSignature = this.generateSimulatedSignature(orderId, paymentId);
+    if (!signature || typeof signature !== 'string') {
+      return {
+        isValid: false,
+        paymentId,
+        orderId,
+        method: 'SIMULATED_UPI',
+        fee: 0,
+      };
+    }
 
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedSignature),
-      Buffer.from(signature)
-    );
+    const expectedSignature = this.generateSimulatedSignature(orderId, paymentId);
+    const expectedBuf = Buffer.from(expectedSignature, 'utf-8');
+    const actualBuf = Buffer.from(signature, 'utf-8');
+
+    if (expectedBuf.length !== actualBuf.length) {
+      return {
+        isValid: false,
+        paymentId,
+        orderId,
+        method: 'SIMULATED_UPI',
+        fee: 0,
+      };
+    }
+
+    const isValid = crypto.timingSafeEqual(expectedBuf, actualBuf);
 
     return {
       isValid,
@@ -75,17 +97,18 @@ export class SimulatedRazorpayProvider implements PaymentProvider {
   }
 
   verifyWebhook(rawBody: string, signature: string): boolean {
-    if (!signature) return false;
+    if (!signature || typeof signature !== 'string') return false;
     const expectedSignature = crypto
       .createHmac('sha256', this.secret)
       .update(rawBody)
       .digest('hex');
 
+    const expectedBuf = Buffer.from(expectedSignature, 'utf-8');
+    const actualBuf = Buffer.from(signature, 'utf-8');
+    if (expectedBuf.length !== actualBuf.length) return false;
+
     try {
-      return crypto.timingSafeEqual(
-        Buffer.from(expectedSignature),
-        Buffer.from(signature)
-      );
+      return crypto.timingSafeEqual(expectedBuf, actualBuf);
     } catch {
       return false;
     }

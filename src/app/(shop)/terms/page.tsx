@@ -28,7 +28,7 @@ export default function TermsPage() {
             1. Agreement and Identity
           </h2>
           <p>
-            These Terms and Conditions govern all orders, purchases, and communications made with SHREENATH ART WORK ("we", "us", "gallery"), located at Opposite Temple Gate, Nathdwara, Rajasthan 313301. By placing an order, you agree to these terms in full.
+            These Terms and Conditions govern all orders, purchases, and communications made with SHREENATH ART WORK (&quot;we&quot;, &quot;us&quot;, &quot;gallery&quot;), located at Opposite Temple Gate, Nathdwara, Rajasthan 313301. By placing an order, you agree to these terms in full.
           </p>
         </section>
 

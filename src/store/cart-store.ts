@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { calculateCouponDiscount } from '@/lib/money';
 
 export interface CartItem {
   id: string; // unique key: `${productId}-${variantId}`
@@ -22,6 +23,31 @@ export interface AppliedCoupon {
   discountType: 'PERCENT' | 'FLAT';
   discountValue: number;
   discountAmount: number; // in paise
+  minOrderValue?: number | null;
+  maxDiscount?: number | null;
+}
+
+function recalculateCoupon(coupon: AppliedCoupon | null, items: CartItem[]): AppliedCoupon | null {
+  if (!coupon) return null;
+  const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  if (subtotal <= 0) {
+    return null;
+  }
+
+  if (coupon.minOrderValue && subtotal < coupon.minOrderValue) {
+    return null;
+  }
+
+  const newDiscount = calculateCouponDiscount(coupon, subtotal);
+  if (newDiscount === 0 && coupon.minOrderValue && subtotal < coupon.minOrderValue) {
+    return null;
+  }
+
+  return {
+    ...coupon,
+    discountAmount: newDiscount,
+  };
 }
 
 interface CartState {
@@ -49,28 +75,30 @@ export const useCartStore = create<CartState>()(
       addItem: (itemData) => {
         const id = `${itemData.productId}-${itemData.variantId}`;
         const existing = get().items.find((i) => i.id === id);
+        let nextItems: CartItem[];
 
         if (existing) {
           const newQty = Math.min(existing.quantity + itemData.quantity, itemData.maxStock);
-          set({
-            items: get().items.map((i) =>
-              i.id === id ? { ...i, quantity: newQty, maxStock: itemData.maxStock } : i
-            ),
-            isDrawerOpen: true,
-          });
+          nextItems = get().items.map((i) =>
+            i.id === id ? { ...i, quantity: newQty, maxStock: itemData.maxStock } : i
+          );
         } else {
-          set({
-            items: [
-              ...get().items,
-              {
-                ...itemData,
-                id,
-                quantity: Math.min(itemData.quantity, itemData.maxStock),
-              },
-            ],
-            isDrawerOpen: true,
-          });
+          nextItems = [
+            ...get().items,
+            {
+              ...itemData,
+              id,
+              quantity: Math.min(itemData.quantity, itemData.maxStock),
+            },
+          ];
         }
+
+        const nextCoupon = recalculateCoupon(get().coupon, nextItems);
+        set({
+          items: nextItems,
+          coupon: nextCoupon,
+          isDrawerOpen: true,
+        });
       },
 
       updateQuantity: (id, quantity) => {
@@ -79,20 +107,27 @@ export const useCartStore = create<CartState>()(
           return;
         }
 
+        const nextItems = get().items.map((item) => {
+          if (item.id === id) {
+            const clamped = Math.min(quantity, item.maxStock);
+            return { ...item, quantity: clamped };
+          }
+          return item;
+        });
+
+        const nextCoupon = recalculateCoupon(get().coupon, nextItems);
         set({
-          items: get().items.map((item) => {
-            if (item.id === id) {
-              const clamped = Math.min(quantity, item.maxStock);
-              return { ...item, quantity: clamped };
-            }
-            return item;
-          }),
+          items: nextItems,
+          coupon: nextCoupon,
         });
       },
 
       removeItem: (id) => {
+        const nextItems = get().items.filter((item) => item.id !== id);
+        const nextCoupon = recalculateCoupon(get().coupon, nextItems);
         set({
-          items: get().items.filter((item) => item.id !== id),
+          items: nextItems,
+          coupon: nextCoupon,
         });
       },
 
@@ -105,7 +140,8 @@ export const useCartStore = create<CartState>()(
       },
 
       applyCoupon: (coupon) => {
-        set({ coupon });
+        const recalculated = recalculateCoupon(coupon, get().items);
+        set({ coupon: recalculated || coupon });
       },
 
       removeCoupon: () => {

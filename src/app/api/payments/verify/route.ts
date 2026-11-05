@@ -21,11 +21,20 @@ export async function POST(req: Request) {
       include: {
         items: true,
         payments: true,
+        couponRedemptions: true,
       },
     });
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // Only online payment orders can be verified through gateway
+    if (order.paymentMethod !== 'ONLINE') {
+      return NextResponse.json(
+        { error: 'Only online payment orders can be verified via payment gateway' },
+        { status: 400 }
+      );
     }
 
     // Idempotency: if already paid, return success immediately
@@ -37,6 +46,18 @@ export async function POST(req: Request) {
       });
     }
 
+    // Reject verification if order is already cancelled or payment previously failed
+    if (
+      order.status === 'CANCELLED' ||
+      order.paymentStatus === 'CANCELLED' ||
+      order.paymentStatus === 'FAILED'
+    ) {
+      return NextResponse.json(
+        { error: 'Order has already been cancelled or payment failed. Cannot verify payment.' },
+        { status: 400 }
+      );
+    }
+
     const provider = getPaymentProvider();
     const verification = await provider.verifyPayment({
       orderId: providerOrderId,
@@ -45,48 +66,62 @@ export async function POST(req: Request) {
     });
 
     if (!verification.isValid) {
-      // Signature failed: rollback stock in transaction and mark payment failed
-      await prisma.$transaction(async (tx) => {
-        // Restore stock
-        for (const item of order.items) {
-          await tx.productVariant.update({
-            where: { id: item.variantId },
-            data: { stock: { increment: item.quantity } },
+      // Signature failed: rollback stock and coupon ONLY if order is in CREATED status
+      // This prevents repeated failed verification attempts from artificially inflating stock
+      if (order.paymentStatus === 'CREATED') {
+        await prisma.$transaction(async (tx) => {
+          // Restore stock
+          for (const item of order.items) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+
+          // Restore coupon
+          for (const red of order.couponRedemptions) {
+            await tx.coupon.update({
+              where: { id: red.couponId },
+              data: { usageCount: { decrement: 1 } },
+            });
+          }
+          await tx.couponRedemption.deleteMany({
+            where: { orderId: order.id },
           });
-        }
 
-        await tx.order.update({
-          where: { id: order.id },
-          data: {
-            paymentStatus: 'FAILED',
-            status: 'CANCELLED',
-          },
+          await tx.order.update({
+            where: { id: order.id },
+            data: {
+              paymentStatus: 'FAILED',
+              status: 'CANCELLED',
+            },
+          });
+
+          await tx.payment.updateMany({
+            where: { orderId: order.id },
+            data: {
+              status: 'FAILED',
+              failureReason: 'HMAC signature verification failed',
+              providerPaymentId: paymentId,
+            },
+          });
+
+          await tx.orderStatusHistory.create({
+            data: {
+              orderId: order.id,
+              status: 'CANCELLED',
+              note: 'Payment signature verification failed',
+              changedBy: 'GATEWAY',
+            },
+          });
         });
 
-        await tx.payment.updateMany({
-          where: { orderId: order.id },
-          data: {
-            status: 'FAILED',
-            failureReason: 'HMAC signature verification failed',
-            providerPaymentId: paymentId,
-          },
+        await logActivityEvent({
+          eventType: 'PAYMENT_FAILED',
+          userId: order.userId || undefined,
+          metadata: { orderNumber: order.orderNumber, reason: 'Signature mismatch' },
         });
-
-        await tx.orderStatusHistory.create({
-          data: {
-            orderId: order.id,
-            status: 'CANCELLED',
-            note: 'Payment signature verification failed',
-            changedBy: 'GATEWAY',
-          },
-        });
-      });
-
-      await logActivityEvent({
-        eventType: 'PAYMENT_FAILED',
-        userId: order.userId || undefined,
-        metadata: { orderNumber: order.orderNumber, reason: 'Signature mismatch' },
-      });
+      }
 
       return NextResponse.json(
         { error: 'Invalid payment signature. Payment could not be verified.' },

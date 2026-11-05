@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice } from '@/lib/money';
+import { useSiteSettings } from '@/hooks/use-site-settings';
+import { calculateOrderTotals, formatPrice } from '@/lib/money';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, Check, AlertCircle } from 'lucide-react';
 
 export default function CartPage() {
@@ -19,18 +20,37 @@ export default function CartPage() {
     getSubtotal,
   } = useCartStore();
 
+  const {
+    freeShippingThreshold,
+    standardShippingCharge,
+    gstEnabled,
+    gstRatePercent,
+    fetchSettings,
+  } = useSiteSettings();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
   const [couponInput, setCouponInput] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
 
   const subtotal = getSubtotal();
-  const freeShippingThreshold = 500000; // Rs 5,000
-  const standardShipping = 25000; // Rs 250
   const discountAmount = coupon ? coupon.discountAmount : 0;
-  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
-  const shippingFee = discountedSubtotal >= freeShippingThreshold || items.length === 0 ? 0 : standardShipping;
-  const estimatedTax = Math.round((discountedSubtotal * 12) / 100);
-  const total = discountedSubtotal + shippingFee;
+
+  const totals = calculateOrderTotals({
+    subtotal,
+    discount: discountAmount,
+    freeShippingThreshold,
+    standardShippingCharge,
+    gstEnabled,
+    gstRatePercent,
+  });
+
+  const shippingFee = items.length === 0 ? 0 : totals.shippingFee;
+  const estimatedTax = items.length === 0 ? 0 : totals.tax;
+  const total = items.length === 0 ? 0 : totals.total;
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,10 +230,12 @@ export default function CartPage() {
                 </span>
               </div>
 
-              <div className="flex justify-between text-[#8A8175] text-[11px]">
-                <span>Estimated GST (included)</span>
-                <span>{formatPrice(estimatedTax)}</span>
-              </div>
+              {gstEnabled && (
+                <div className="flex justify-between text-[#8A8175] text-[11px]">
+                  <span>Estimated GST ({gstRatePercent}% included)</span>
+                  <span>{formatPrice(estimatedTax)}</span>
+                </div>
+              )}
 
               <div className="border-t border-[#ECE5DA] pt-3 flex justify-between text-base font-semibold text-[#262320]">
                 <span>Total Amount</span>

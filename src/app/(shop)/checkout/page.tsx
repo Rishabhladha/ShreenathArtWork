@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice } from '@/lib/money';
+import { useSiteSettings } from '@/hooks/use-site-settings';
+import { calculateOrderTotals, formatPrice } from '@/lib/money';
+import { trackActivity } from '@/lib/telemetry';
 import { ShieldCheck, ArrowRight, AlertCircle, Lock, Truck, CreditCard, Banknote } from 'lucide-react';
 
 const INDIAN_STATES = [
@@ -21,6 +23,19 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { items, coupon, getSubtotal, clearCart } = useCartStore();
+
+  const {
+    freeShippingThreshold,
+    standardShippingCharge,
+    gstEnabled,
+    gstRatePercent,
+    codEnabled,
+    fetchSettings,
+  } = useSiteSettings();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -41,16 +56,35 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  // Pre-fill user data if logged in
+  // Pre-fill user data if logged in - scheduled asynchronously to avoid cascading re-renders
   useEffect(() => {
     if (session?.user) {
-      setFormData((prev) => ({
-        ...prev,
-        customerName: prev.customerName || session.user.name || '',
-        customerEmail: prev.customerEmail || session.user.email || '',
-      }));
+      queueMicrotask(() => {
+        setFormData((prev) => {
+          const newName = prev.customerName || session.user.name || '';
+          const newEmail = prev.customerEmail || session.user.email || '';
+          if (prev.customerName === newName && prev.customerEmail === newEmail) {
+            return prev;
+          }
+          return {
+            ...prev,
+            customerName: newName,
+            customerEmail: newEmail,
+          };
+        });
+      });
     }
-  }, [session]);
+  }, [session?.user?.name, session?.user?.email]);
+
+  // Track checkout started
+  useEffect(() => {
+    if (items.length > 0) {
+      trackActivity('CHECKOUT_STARTED', {
+        itemCount: items.length,
+        subtotal: getSubtotal(),
+      });
+    }
+  }, []); // Run once on mount
 
   const handleFillSampleAddress = () => {
     setFormData({
@@ -73,11 +107,18 @@ export default function CheckoutPage() {
 
   const subtotal = getSubtotal();
   const discountAmount = coupon ? coupon.discountAmount : 0;
-  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
-  const freeShippingThreshold = 500000; // Rs 5,000
-  const standardShipping = 25000; // Rs 250
-  const shippingFee = discountedSubtotal >= freeShippingThreshold || items.length === 0 ? 0 : standardShipping;
-  const total = discountedSubtotal + shippingFee;
+
+  const totals = calculateOrderTotals({
+    subtotal,
+    discount: discountAmount,
+    freeShippingThreshold,
+    standardShippingCharge,
+    gstEnabled,
+    gstRatePercent,
+  });
+
+  const shippingFee = items.length === 0 ? 0 : totals.shippingFee;
+  const total = items.length === 0 ? 0 : totals.total;
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -182,8 +223,94 @@ export default function CheckoutPage() {
           )}&providerOrderId=${encodeURIComponent(data.providerOrderId)}&amount=${data.amount}`
         );
       } else {
-        // Real Razorpay SDK integration (active when PAYMENT_MODE=razorpay)
-        setServerError('Real Razorpay gateway is currently in test simulator mode.');
+        // Real Razorpay SDK integration
+        const loadScript = () => {
+          return new Promise<boolean>((resolve) => {
+            if ((window as unknown as { Razorpay: unknown }).Razorpay) {
+              return resolve(true);
+            }
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+          });
+        };
+
+        const loaded = await loadScript();
+        if (!loaded) {
+          await fetch('/api/payments/fail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: data.orderId, reason: 'Failed to load Razorpay SDK' }),
+          });
+          throw new Error('Unable to load payment gateway. Please check your internet connection.');
+        }
+
+        const options = {
+          key: data.keyId,
+          amount: data.amount,
+          currency: data.currency || 'INR',
+          name: 'SHREENATH ART WORK',
+          description: `Devotional Artwork Order ${data.orderNumber}`,
+          order_id: data.providerOrderId,
+          prefill: {
+            name: formData.customerName,
+            email: formData.customerEmail,
+            contact: formData.customerPhone,
+          },
+          theme: {
+            color: '#1C1917',
+          },
+          handler: async (response: {
+            razorpay_payment_id: string;
+            razorpay_order_id: string;
+            razorpay_signature: string;
+          }) => {
+            try {
+              const verifyRes = await fetch('/api/payments/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: data.orderId,
+                  providerOrderId: response.razorpay_order_id,
+                  paymentId: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
+                }),
+              });
+              const verifyData = await verifyRes.json();
+              if (verifyRes.ok && verifyData.success) {
+                clearCart();
+                router.push(`/checkout/order-confirmed?orderNumber=${encodeURIComponent(data.orderNumber)}`);
+              } else {
+                setServerError(verifyData.error || 'Payment verification failed');
+                setSubmitting(false);
+              }
+            } catch {
+              setServerError('Payment verification request failed. Please check your network.');
+              setSubmitting(false);
+            }
+          },
+          modal: {
+            ondismiss: async () => {
+              await fetch('/api/payments/fail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: data.orderId,
+                  reason: 'cancelled',
+                }),
+              });
+              setServerError('Payment was cancelled. Your reserved items have been restored.');
+              setSubmitting(false);
+            },
+          },
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const RazorpayConstructor = (window as unknown as { Razorpay: any }).Razorpay;
+        const rzp = new RazorpayConstructor(options);
+        rzp.open();
       }
     } catch (err: unknown) {
       setServerError(err instanceof Error ? err.message : 'An error occurred during checkout');
@@ -428,25 +555,27 @@ export default function CheckoutPage() {
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 p-3.5 border rounded-sm cursor-pointer transition-colors border-[#E2DACD] hover:border-[#8A8175] bg-[#FAF7F2]">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="COD"
-                    checked={formData.paymentMethod === 'COD'}
-                    onChange={() => setFormData({ ...formData, paymentMethod: 'COD' })}
-                    className="mt-1 text-[#262320]"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 font-medium text-xs text-[#262320]">
-                      <Banknote className="w-4 h-4 text-[#8A8175]" />
-                      <span>Cash on Delivery (COD)</span>
+                {codEnabled && (
+                  <label className="flex items-start gap-3 p-3.5 border rounded-sm cursor-pointer transition-colors border-[#E2DACD] hover:border-[#8A8175] bg-[#FAF7F2]">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="COD"
+                      checked={formData.paymentMethod === 'COD'}
+                      onChange={() => setFormData({ ...formData, paymentMethod: 'COD' })}
+                      className="mt-1 text-[#262320]"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium text-xs text-[#262320]">
+                        <Banknote className="w-4 h-4 text-[#8A8175]" />
+                        <span>Cash on Delivery (COD)</span>
+                      </div>
+                      <p className="text-[11px] text-[#5C554C] mt-0.5">
+                        Pay cash or UPI upon delivery at your doorstep. Verified before courier dispatch.
+                      </p>
                     </div>
-                    <p className="text-[11px] text-[#5C554C] mt-0.5">
-                      Pay cash or UPI upon delivery at your doorstep. Verified before courier dispatch.
-                    </p>
-                  </div>
-                </label>
+                  </label>
+                )}
               </div>
             </div>
           </div>

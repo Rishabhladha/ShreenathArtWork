@@ -7,7 +7,7 @@ import { logActivityEvent } from '@/lib/events';
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'local';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
     const rateCheck = checkRateLimit(`register:${ip}`, 5, 300);
     if (!rateCheck.success) {
       return NextResponse.json(

@@ -144,12 +144,9 @@ export default async function OrderConfirmedPage({ searchParams }: OrderConfirme
             <p className="text-[#5C554C] leading-relaxed">
               {addressData.customerName}
               <br />
-              {addressData.addressLine1}
-              {addressData.addressLine2 && `, ${addressData.addressLine2}`}
-              <br />
               {addressData.city}, {addressData.state} - {addressData.postalCode}
               <br />
-              Phone: {addressData.customerPhone}
+              Contact: {addressData.customerPhone ? `${addressData.customerPhone.slice(0, 2)}******${addressData.customerPhone.slice(-2)}` : ''}
             </p>
           </div>
 
@@ -167,7 +164,7 @@ export default async function OrderConfirmedPage({ searchParams }: OrderConfirme
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 justify-center pt-2">
         <Link
-          href={`/track-order?orderNumber=${encodeURIComponent(order.orderNumber)}`}
+          href={`/track-order?orderNumber=${encodeURIComponent(order.orderNumber)}&contact=${encodeURIComponent(order.customerPhone)}`}
           className="btn-primary text-xs py-2.5 px-4 flex items-center gap-1.5"
         >
           <PackageCheck className="w-4 h-4" />

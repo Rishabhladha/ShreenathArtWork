@@ -25,8 +25,45 @@ interface ImageInput {
   isPrimary: boolean;
 }
 
+interface InitialImage {
+  id?: string;
+  url: string;
+  altText: string;
+  displayOrder?: number;
+  isPrimary?: boolean;
+}
+
+interface InitialVariant {
+  id?: string;
+  size: string;
+  frame: string;
+  price: number;
+  mrp?: number | null;
+  sku: string;
+  stock: number;
+  isDefault?: boolean;
+}
+
+export interface InitialProduct {
+  id?: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  categoryId: string;
+  medium?: string | null;
+  dimensions?: string | null;
+  careInstructions?: string | null;
+  tags?: string | null;
+  featured?: boolean;
+  status?: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  images?: InitialImage[];
+  variants?: InitialVariant[];
+}
+
 interface ProductFormProps {
-  initialProduct?: any;
+  initialProduct?: InitialProduct | null;
   categories: Array<{ id: string; name: string }>;
 }
 
@@ -48,7 +85,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
   const [seoDescription, setSeoDescription] = useState(initialProduct?.seoDescription || '');
 
   const [images, setImages] = useState<ImageInput[]>(
-    initialProduct?.images?.map((img: any, idx: number) => ({
+    initialProduct?.images?.map((img: InitialImage, idx: number) => ({
       id: img.id,
       url: img.url,
       altText: img.altText,
@@ -65,7 +102,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
   );
 
   const [variants, setVariants] = useState<VariantInput[]>(
-    initialProduct?.variants?.map((v: any) => ({
+    initialProduct?.variants?.map((v: InitialVariant) => ({
       id: v.id,
       size: v.size,
       frame: v.frame,
@@ -73,14 +110,14 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
       mrpRupees: v.mrp ? Math.round(v.mrp / 100) : undefined,
       sku: v.sku,
       stock: v.stock,
-      isDefault: v.isDefault,
+      isDefault: Boolean(v.isDefault),
     })) || [
       {
         size: '24 x 36 in',
         frame: 'Unframed / Rolled',
         priceRupees: 18000,
         mrpRupees: 21000,
-        sku: `SKU-${Date.now().toString().slice(-6)}-1`,
+        sku: 'SKU-INIT-1',
         stock: 3,
         isDefault: true,
       },
@@ -125,15 +162,32 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         throw new Error(data.error || 'Failed to upload image');
       }
 
-      setImages((prev) => [
-        ...prev,
-        {
-          url: data.url,
-          altText: `${title || 'Artwork'} photo ${prev.length + 1}`,
-          displayOrder: prev.length,
-          isPrimary: prev.length === 0,
-        },
-      ]);
+      setImages((prev) => {
+        // If only the placeholder image exists, replace it with the uploaded image
+        const hasOnlyPlaceholder =
+          prev.length === 1 && prev[0].url === '/placeholder-artwork.svg';
+
+        if (hasOnlyPlaceholder) {
+          return [
+            {
+              url: data.url,
+              altText: `${title || 'Artwork'} photo 1`,
+              displayOrder: 0,
+              isPrimary: true,
+            },
+          ];
+        }
+
+        return [
+          ...prev,
+          {
+            url: data.url,
+            altText: `${title || 'Artwork'} photo ${prev.length + 1}`,
+            displayOrder: prev.length,
+            isPrimary: prev.length === 0,
+          },
+        ];
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Image upload failed');
     } finally {
@@ -148,7 +202,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         size: '36 x 48 in',
         frame: 'Teak Wood Frame',
         priceRupees: 25000,
-        sku: `SKU-${Date.now().toString().slice(-6)}-${prev.length + 1}`,
+        sku: `SKU-VAR-${prev.length + 1}`,
         stock: 2,
         isDefault: false,
       },
@@ -160,7 +214,22 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
       alert('A product must have at least one variant.');
       return;
     }
-    setVariants((prev) => prev.filter((_, idx) => idx !== index));
+    setVariants((prev) => {
+      const filtered = prev.filter((_, idx) => idx !== index);
+      if (!filtered.some((v) => v.isDefault)) {
+        filtered[0] = { ...filtered[0], isDefault: true };
+      }
+      return filtered;
+    });
+  };
+
+  const setDefaultVariant = (index: number) => {
+    setVariants((prev) =>
+      prev.map((v, idx) => ({
+        ...v,
+        isDefault: idx === index,
+      }))
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -170,6 +239,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
     setSubmitting(true);
 
     try {
+      const hasDefault = variants.some((v) => v.isDefault);
       const payload = {
         title,
         slug,
@@ -189,18 +259,18 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
           displayOrder: idx,
           isPrimary: idx === 0,
         })),
-        variants: variants.map((v) => ({
+        variants: variants.map((v, idx) => ({
           size: v.size,
           frame: v.frame,
           price: Math.round(v.priceRupees * 100),
           mrp: v.mrpRupees ? Math.round(v.mrpRupees * 100) : null,
           sku: v.sku,
           stock: parseInt(String(v.stock), 10),
-          isDefault: v.isDefault,
+          isDefault: hasDefault ? v.isDefault : idx === 0,
         })),
       };
 
-      const url = isEditing ? `/api/admin/products/${initialProduct.id}` : '/api/admin/products';
+      const url = isEditing && initialProduct ? `/api/admin/products/${initialProduct.id}` : '/api/admin/products';
       const method = isEditing ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -226,7 +296,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
   };
 
   const handleDelete = async () => {
-    if (!isEditing) return;
+    if (!isEditing || !initialProduct) return;
     if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) return;
 
     try {
@@ -256,7 +326,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
           </Link>
           <div>
             <h1 className="font-serif text-2xl font-bold text-[#262320]">
-              {isEditing ? `Edit: ${initialProduct.title}` : 'Add New Devotional Artwork'}
+              {isEditing && initialProduct ? `Edit: ${initialProduct.title}` : 'Add New Devotional Artwork'}
             </h1>
             <p className="text-xs text-[#5C554C]">
               Specify artwork details, stone pigments, dimensions, and sizes.
@@ -505,14 +575,28 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
                         className="w-24 px-1.5 py-1 text-xs border border-[#E2DACD] rounded-sm bg-white font-mono text-[#262320]"
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeVariant(idx)}
-                      className="text-[#8A8175] hover:text-[#8C2B2B] p-1 mt-2"
-                      title="Remove variant"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setDefaultVariant(idx)}
+                        className={`px-1.5 py-0.5 text-[10px] rounded-sm border transition-colors ${
+                          v.isDefault
+                            ? 'bg-[#1C1917] text-white border-[#1C1917] font-semibold'
+                            : 'bg-white text-[#8A8175] border-[#E2DACD] hover:text-[#1C1917]'
+                        }`}
+                        title={v.isDefault ? 'Default variant shown in catalog' : 'Set as default variant'}
+                      >
+                        {v.isDefault ? 'Default' : 'Set Default'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeVariant(idx)}
+                        className="text-[#8A8175] hover:text-[#8C2B2B] p-1"
+                        title="Remove variant"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -563,7 +647,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
                 <span>{uploading ? 'Uploading...' : 'Upload'}</span>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={handleFileUpload}
                   className="hidden"
                 />

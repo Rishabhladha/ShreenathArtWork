@@ -1,24 +1,26 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useSession } from 'next-auth/react';
 import { ShoppingBag, Heart, User, Menu, X, Search, MapPin } from 'lucide-react';
 
+const emptySubscribe = () => () => {};
+function useMounted() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false);
+}
+
 export function Header() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const cartItemCount = useCartStore((state) => state.getItemCount());
   const setCartDrawerOpen = useCartStore((state) => state.setDrawerOpen);
@@ -38,7 +40,8 @@ export function Header() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/catalog?search=${encodeURIComponent(searchQuery.trim())}`;
+      router.push(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchOpen(false);
     }
   };
 

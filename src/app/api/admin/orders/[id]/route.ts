@@ -21,7 +21,7 @@ export async function PUT(req: Request, { params }: RouteProps) {
   try {
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { items: true, payments: true },
+      include: { items: true, payments: true, refunds: true },
     });
 
     if (!order) {
@@ -118,28 +118,70 @@ export async function PUT(req: Request, { params }: RouteProps) {
       return NextResponse.json({ success: true, order: updated });
     }
 
-    // Action: Issue Refund (Simulated or Real)
+    // Action: Issue Refund (Simulated, Real Razorpay, or COD Manual)
     if (action === 'issue_refund') {
-      const amountToRefund = refundAmount ? parseInt(refundAmount, 10) : order.total;
-      const provider = getPaymentProvider();
-      const refundResult = await provider.refund(order.payments[0]?.providerPaymentId || '', amountToRefund);
+      if (order.paymentStatus !== 'PAID' && order.paymentStatus !== 'PARTIALLY_REFUNDED') {
+        return NextResponse.json(
+          { error: 'Cannot issue a refund for an unpaid or cancelled order.' },
+          { status: 400 }
+        );
+      }
+
+      const totalAlreadyRefunded = order.refunds
+        .filter((r) => r.status === 'SUCCESS')
+        .reduce((sum, r) => sum + r.amount, 0);
+
+      const maxRefundable = order.total - totalAlreadyRefunded;
+      if (maxRefundable <= 0) {
+        return NextResponse.json(
+          { error: 'This order has already been fully refunded.' },
+          { status: 400 }
+        );
+      }
+
+      const amountToRefund = refundAmount ? parseInt(refundAmount, 10) : maxRefundable;
+      if (isNaN(amountToRefund) || amountToRefund <= 0) {
+        return NextResponse.json({ error: 'Refund amount must be greater than zero.' }, { status: 400 });
+      }
+      if (amountToRefund > maxRefundable) {
+        return NextResponse.json(
+          {
+            error: `Refund amount cannot exceed remaining refundable balance of Rs ${Math.round(
+              maxRefundable / 100
+            )}.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      let refundId = `rfnd_MANUAL_${Date.now()}`;
+      let refundStatus = 'SUCCESS';
+
+      const onlinePayment = order.payments.find((p) => p.providerPaymentId);
+      if (onlinePayment?.providerPaymentId && order.paymentMethod === 'ONLINE') {
+        const provider = getPaymentProvider();
+        const refundResult = await provider.refund(onlinePayment.providerPaymentId, amountToRefund);
+        refundId = refundResult.refundId;
+        refundStatus = refundResult.status;
+      }
 
       await prisma.$transaction(async (tx) => {
+        const isFullRefund = totalAlreadyRefunded + amountToRefund >= order.total;
         await tx.order.update({
           where: { id },
           data: {
-            paymentStatus: amountToRefund >= order.total ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+            paymentStatus: isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
           },
         });
 
         await tx.refund.create({
           data: {
             orderId: id,
-            paymentId: order.payments[0]?.id || null,
+            paymentId: onlinePayment?.id || order.payments[0]?.id || null,
             amount: amountToRefund,
             reason: reason || 'Admin initiated refund',
-            status: refundResult.status,
-            providerRefundId: refundResult.refundId,
+            status: refundStatus,
+            providerRefundId: refundId,
           },
         });
 
@@ -147,7 +189,7 @@ export async function PUT(req: Request, { params }: RouteProps) {
           data: {
             orderId: id,
             status: order.status,
-            note: `Refund of Rs ${Math.round(amountToRefund / 100)} processed (${refundResult.refundId})`,
+            note: `Refund of Rs ${Math.round(amountToRefund / 100)} processed (${refundId})`,
             changedBy: session.user.email || 'ADMIN',
           },
         });
@@ -159,10 +201,17 @@ export async function PUT(req: Request, { params }: RouteProps) {
         action: 'ISSUE_REFUND',
         entity: 'Order',
         entityId: id,
-        details: { refundId: refundResult.refundId, amount: amountToRefund },
+        details: { refundId, amount: amountToRefund },
       });
 
-      return NextResponse.json({ success: true, refund: refundResult });
+      return NextResponse.json({
+        success: true,
+        refund: {
+          refundId,
+          amount: amountToRefund,
+          status: refundStatus,
+        },
+      });
     }
 
     // Action: Save Internal Notes

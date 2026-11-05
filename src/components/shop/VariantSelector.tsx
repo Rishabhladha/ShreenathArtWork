@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/lib/money';
+import { trackActivity } from '@/lib/telemetry';
 import { ShoppingBag, Zap, Share2, Check, AlertCircle } from 'lucide-react';
 
 export interface VariantData {
@@ -46,11 +47,32 @@ export function VariantSelector({
   const [quantity, setQuantity] = useState<number>(1);
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Find matching variant
-  const currentVariant =
-    variants.find((v) => v.size === selectedSize && v.frame === selectedFrame) ||
-    variants.find((v) => v.size === selectedSize) ||
-    variants[0];
+  const handleSelectSize = (size: string) => {
+    setSelectedSize(size);
+    const hasCurrentFrame = variants.some((v) => v.size === size && v.frame === selectedFrame);
+    if (!hasCurrentFrame) {
+      const compatible = variants.find((v) => v.size === size);
+      if (compatible) {
+        setSelectedFrame(compatible.frame);
+      }
+    }
+  };
+
+  const handleSelectFrame = (frame: string) => {
+    setSelectedFrame(frame);
+    const hasCurrentSize = variants.some((v) => v.size === selectedSize && v.frame === frame);
+    if (!hasCurrentSize) {
+      const compatible = variants.find((v) => v.frame === frame);
+      if (compatible) {
+        setSelectedSize(compatible.size);
+      }
+    }
+  };
+
+  // Find exact matching variant
+  const currentVariant = variants.find(
+    (v) => v.size === selectedSize && v.frame === selectedFrame
+  );
 
   const isOutOfStock = !currentVariant || currentVariant.stock <= 0;
 
@@ -69,6 +91,13 @@ export function VariantSelector({
       quantity,
       maxStock: currentVariant.stock,
     });
+    trackActivity('ADD_TO_CART', {
+      productId,
+      variantId: currentVariant.id,
+      title,
+      price: currentVariant.price,
+      quantity,
+    });
   };
 
   const handleBuyNow = () => {
@@ -85,6 +114,13 @@ export function VariantSelector({
       mrp: currentVariant.mrp,
       quantity,
       maxStock: currentVariant.stock,
+    });
+    trackActivity('ADD_TO_CART', {
+      productId,
+      variantId: currentVariant.id,
+      title,
+      price: currentVariant.price,
+      quantity,
     });
     router.push('/checkout');
   };
@@ -104,16 +140,16 @@ export function VariantSelector({
       <div className="space-y-1">
         <div className="flex items-baseline gap-3">
           <span className="font-serif text-3xl font-bold text-[#262320]">
-            {formatPrice(currentVariant.price)}
+            {currentVariant ? formatPrice(currentVariant.price) : 'Unavailable'}
           </span>
-          {currentVariant.mrp && currentVariant.mrp > currentVariant.price && (
+          {currentVariant?.mrp && currentVariant.mrp > currentVariant.price && (
             <span className="text-base text-[#8A8175] line-through">
               {formatPrice(currentVariant.mrp)}
             </span>
           )}
         </div>
         <p className="text-xs text-[#8A8175]">
-          SKU: {currentVariant.sku} | Tax included. Insured framing and transit.
+          SKU: {currentVariant?.sku || 'N/A'} | Tax included. Insured framing and transit.
         </p>
       </div>
 
@@ -130,7 +166,7 @@ export function VariantSelector({
                 <button
                   key={size}
                   type="button"
-                  onClick={() => setSelectedSize(size)}
+                  onClick={() => handleSelectSize(size)}
                   className={`px-3 py-2 text-xs rounded-sm border transition-colors focus-ring ${
                     isSelected
                       ? 'border-[#1C1917] bg-[#1C1917] text-white font-medium shadow-xs'
@@ -154,15 +190,18 @@ export function VariantSelector({
           <div className="flex flex-wrap gap-2">
             {frames.map((frame) => {
               const isSelected = frame === selectedFrame;
+              const isAvailable = variants.some((v) => v.size === selectedSize && v.frame === frame);
               return (
                 <button
                   key={frame}
                   type="button"
-                  onClick={() => setSelectedFrame(frame)}
+                  onClick={() => handleSelectFrame(frame)}
                   className={`px-3 py-2 text-xs rounded-sm border transition-colors focus-ring ${
                     isSelected
                       ? 'border-[#1C1917] bg-[#1C1917] text-white font-medium shadow-xs'
-                      : 'border-[#E7E2D8] bg-white text-[#1C1917] hover:border-[#B8511B]'
+                      : isAvailable
+                      ? 'border-[#E7E2D8] bg-white text-[#1C1917] hover:border-[#B8511B]'
+                      : 'border-[#E7E2D8] bg-[#F7F4EE] text-[#A8A29E] line-through'
                   }`}
                 >
                   {frame}
@@ -175,7 +214,12 @@ export function VariantSelector({
 
       {/* Stock Availability indicator (Real DB stock only, strictly factual) */}
       <div className="text-xs">
-        {isOutOfStock ? (
+        {!currentVariant ? (
+          <div className="flex items-center gap-1.5 text-[#8C2B2B]">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>This size and framing combination is not available. Please choose another option.</span>
+          </div>
+        ) : isOutOfStock ? (
           <div className="flex items-center gap-1.5 text-[#8C2B2B]">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>Currently out of stock. Contact our gallery for a made-to-order commission.</span>

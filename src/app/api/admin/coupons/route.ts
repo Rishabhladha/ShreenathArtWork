@@ -66,3 +66,82 @@ export async function POST(req: Request) {
   }
 }
 
+export async function PATCH(req: Request) {
+  const session = await requireAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const { id, isActive } = body;
+    if (!id || typeof isActive !== 'boolean') {
+      return NextResponse.json({ error: 'Coupon ID and isActive boolean required' }, { status: 400 });
+    }
+
+    const updated = await prisma.coupon.update({
+      where: { id },
+      data: { isActive },
+    });
+
+    await logAuditAction({
+      adminUserId: session.user.id,
+      adminEmail: session.user.email || 'admin',
+      action: isActive ? 'ENABLE_COUPON' : 'DISABLE_COUPON',
+      entity: 'Coupon',
+      entityId: id,
+      details: { code: updated.code },
+    });
+
+    return NextResponse.json({ success: true, coupon: updated });
+  } catch (error) {
+    console.error('Update coupon error:', error);
+    return NextResponse.json({ error: 'Failed to update coupon' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  const session = await requireAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'Coupon ID required' }, { status: 400 });
+    }
+
+    const redemptionsCount = await prisma.couponRedemption.count({ where: { couponId: id } });
+    if (redemptionsCount > 0) {
+      // Deactivate instead of deleting if redemptions exist
+      const updated = await prisma.coupon.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      return NextResponse.json({
+        success: true,
+        message: 'Coupon has existing redemptions and was deactivated instead of deleted.',
+        coupon: updated,
+      });
+    }
+
+    const deleted = await prisma.coupon.delete({ where: { id } });
+
+    await logAuditAction({
+      adminUserId: session.user.id,
+      adminEmail: session.user.email || 'admin',
+      action: 'DELETE_COUPON',
+      entity: 'Coupon',
+      entityId: id,
+      details: { code: deleted.code },
+    });
+
+    return NextResponse.json({ success: true, coupon: deleted });
+  } catch (error) {
+    console.error('Delete coupon error:', error);
+    return NextResponse.json({ error: 'Failed to delete coupon' }, { status: 500 });
+  }
+}
+

@@ -6,7 +6,70 @@ import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/money';
 import { ArrowLeft, Printer, Truck, DollarSign, Ban, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 
-export function AdminOrderDetailManager({ order }: { order: any }) {
+interface OrderItemRecord {
+  id: string;
+  titleSnapshot: string;
+  sizeSnapshot: string;
+  frameSnapshot: string;
+  priceSnapshot: number;
+  subtotal: number;
+  quantity: number;
+}
+
+interface StatusHistoryRecord {
+  id: string;
+  status: string;
+  note?: string | null;
+  changedBy: string;
+  createdAt: string | Date;
+}
+
+interface PaymentRecord {
+  id: string;
+  provider: string;
+  providerPaymentId?: string | null;
+  status: string;
+  method?: string | null;
+  amount: number;
+  createdAt: string | Date;
+}
+
+interface OrderDetail {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingAddress: string;
+  orderNotes?: string | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
+  internalNotes?: string | null;
+  subtotal: number;
+  discount: number;
+  shippingFee: number;
+  total: number;
+  createdAt: string | Date;
+  items: OrderItemRecord[];
+  statusHistory: StatusHistoryRecord[];
+  payments: PaymentRecord[];
+}
+
+interface AddressData {
+  customerName?: string;
+  customerPhone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  landmark?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+}
+
+export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
   const router = useRouter();
 
   const [status, setStatus] = useState(order.status);
@@ -20,7 +83,7 @@ export function AdminOrderDetailManager({ order }: { order: any }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  let addressData: any = {};
+  let addressData: AddressData = {};
   try {
     addressData = JSON.parse(order.shippingAddress);
   } catch {
@@ -185,7 +248,7 @@ export function AdminOrderDetailManager({ order }: { order: any }) {
             </h2>
 
             <div className="divide-y divide-[#ECE5DA]">
-              {order.items.map((i: any) => (
+              {order.items.map((i: OrderItemRecord) => (
                 <div key={i.id} className="py-3 flex justify-between items-start text-xs text-[#5C554C]">
                   <div>
                     <p className="font-semibold text-sm text-[#262320]">{i.titleSnapshot}</p>
@@ -262,7 +325,7 @@ export function AdminOrderDetailManager({ order }: { order: any }) {
               Fulfillment Audit History
             </h2>
             <div className="space-y-2 text-xs">
-              {order.statusHistory.map((h: any) => (
+              {order.statusHistory.map((h: StatusHistoryRecord) => (
                 <div
                   key={h.id}
                   className="p-2.5 bg-[#FAF6EF] border border-[#ECE5DA] rounded-sm flex items-start justify-between"

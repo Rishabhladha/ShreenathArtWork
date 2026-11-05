@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { couponApplySchema } from '@/lib/validators';
+import { calculateCouponDiscount } from '@/lib/money';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'local';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
     const rateCheck = checkRateLimit(`coupon:${ip}`, 10, 60);
     if (!rateCheck.success) {
       return NextResponse.json(
@@ -58,16 +59,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let discountAmount = 0;
-    if (coupon.discountType === 'PERCENT') {
-      discountAmount = Math.round((subtotal * coupon.discountValue) / 100);
-      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
-        discountAmount = coupon.maxDiscount;
-      }
-    } else {
-      // FLAT discount in paise
-      discountAmount = Math.min(coupon.discountValue, subtotal);
-    }
+    const discountAmount = calculateCouponDiscount(coupon, subtotal);
 
     return NextResponse.json({
       valid: true,
@@ -77,6 +69,8 @@ export async function POST(req: Request) {
         discountType: coupon.discountType,
         discountValue: coupon.discountValue,
         discountAmount,
+        minOrderValue: coupon.minOrderValue,
+        maxDiscount: coupon.maxDiscount,
       },
     });
   } catch (error) {

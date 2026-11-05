@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
             1. Overview and Scope
           </h2>
           <p>
-            SHREENATH ART WORK ("we", "our", or "gallery"), operating from Nathdwara, Rajasthan, values the privacy of every art collector and visitor. This policy explains how we collect, store, and process personal data when you browse our website, acquire paintings, or submit commission requests.
+            SHREENATH ART WORK (&quot;we&quot;, &quot;our&quot;, or &quot;gallery&quot;), operating from Nathdwara, Rajasthan, values the privacy of every art collector and visitor. This policy explains how we collect, store, and process personal data when you browse our website, acquire paintings, or submit commission requests.
           </p>
         </section>
 

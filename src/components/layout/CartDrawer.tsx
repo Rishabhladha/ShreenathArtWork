@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cart-store';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { formatPrice } from '@/lib/money';
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 
@@ -17,8 +18,13 @@ export function CartDrawer() {
     getSubtotal,
   } = useCartStore();
 
+  const { freeShippingThreshold, fetchSettings } = useSiteSettings();
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
   const subtotal = getSubtotal();
-  const freeShippingThreshold = 500000; // Rs 5,000
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
 
   // Close drawer on ESC key

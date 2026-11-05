@@ -5,7 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || 'local';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'local';
     const rateCheck = checkRateLimit(`newsletter:${ip}`, 5, 60);
     if (!rateCheck.success) {
       return NextResponse.json(

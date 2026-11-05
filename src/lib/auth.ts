@@ -67,7 +67,12 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'shreenath_secret_key_production_ready_9079901405_313301',
+  secret: (() => {
+    if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
+      throw new Error('NEXTAUTH_SECRET must be set in production environment.');
+    }
+    return process.env.NEXTAUTH_SECRET || 'dev_secret_key_change_in_production';
+  })(),
 };
 
 export async function getServerAuthSession() {
@@ -81,6 +86,14 @@ export async function requireAdminSession() {
   }
   const role = session.user.role;
   if (role !== Role.OWNER && role !== Role.STAFF) {
+    return null;
+  }
+  return session;
+}
+
+export async function requireOwnerSession() {
+  const session = await getServerAuthSession();
+  if (!session || !session.user || session.user.role !== Role.OWNER) {
     return null;
   }
   return session;

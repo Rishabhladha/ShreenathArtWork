@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
+import { logActivityEvent } from '@/lib/events';
 import { ImageGallery } from '@/components/shop/ImageGallery';
 import { VariantSelector } from '@/components/shop/VariantSelector';
 import { ReviewSection } from '@/components/shop/ReviewSection';
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     include: { images: true, variants: { orderBy: { price: 'asc' }, take: 1 } },
   });
 
-  if (!product) return {};
+  if (!product || product.status !== 'ACTIVE') return {};
 
   const minPrice = product.variants[0]?.price ? Math.round(product.variants[0].price / 100) : 0;
   const primaryImg = product.images[0]?.url || '/placeholder-artwork.svg';
@@ -50,9 +51,19 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     },
   });
 
-  if (!product || product.status === 'ARCHIVED') {
+  if (!product || product.status !== 'ACTIVE') {
     notFound();
   }
+
+  // Telemetry: Log product view
+  await logActivityEvent({
+    eventType: 'PRODUCT_VIEW',
+    metadata: {
+      productId: product.id,
+      slug: product.slug,
+      title: product.title,
+    },
+  });
 
   // Related products from same category
   const relatedProducts = await prisma.product.findMany({

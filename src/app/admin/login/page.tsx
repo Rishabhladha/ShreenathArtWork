@@ -5,10 +5,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Shield, Lock, AlertCircle } from 'lucide-react';
 
+function getSafeRedirectUrl(url: string | null, fallback: string): string {
+  if (!url) return fallback;
+  if (url.startsWith('/') && !url.startsWith('//') && !url.startsWith('/\\')) {
+    return url;
+  }
+  return fallback;
+}
+
 function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin';
+  const callbackUrl = getSafeRedirectUrl(searchParams.get('callbackUrl'), '/admin');
   const urlError = searchParams.get('error');
 
   const [email, setEmail] = useState('');

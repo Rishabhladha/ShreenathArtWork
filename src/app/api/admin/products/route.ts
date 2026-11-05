@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { requireAdminSession } from '@/lib/auth';
 import { productSchema } from '@/lib/validators';
 import { logAuditAction } from '@/lib/audit';
@@ -15,7 +16,7 @@ export async function GET(req: Request) {
   const categoryId = searchParams.get('categoryId') || '';
   const status = searchParams.get('status') || '';
 
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
   if (search) {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
     where.categoryId = categoryId;
   }
   if (status) {
-    where.status = status;
+    where.status = status as ProductStatus;
   }
 
   const products = await prisma.product.findMany({

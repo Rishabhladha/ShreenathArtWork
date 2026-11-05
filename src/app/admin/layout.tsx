@@ -22,17 +22,21 @@ export default async function AdminLayout({
 }) {
   const session = await getServerAuthSession();
 
-  // Route /admin/login is handled separately or exempted
   if (!session || !session.user || (session.user.role !== 'OWNER' && session.user.role !== 'STAFF')) {
-    // If not authenticated or not staff/owner, let the child (e.g. login) render if it's login
-    // In App router layout, we allow children to render if they are public login, but here we can check pathname or wrap subroutes
+    return (
+      <div className="min-h-screen bg-[#FAF6EF] text-[#262320] flex flex-col antialiased">
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#FAF6EF] text-[#262320] flex flex-col antialiased">
-      <AdminHeader user={session?.user} />
+      <AdminHeader user={session.user} />
       <div className="flex-1 flex overflow-hidden">
-        <AdminSidebar role={session?.user?.role} />
+        <AdminSidebar role={session.user.role} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {children}
         </main>

@@ -3,9 +3,24 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/money';
-import { Plus, Tag, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Tag, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 
-export function AdminCouponManager({ initialCoupons }: { initialCoupons: any[] }) {
+export interface CouponItem {
+  id: string;
+  code: string;
+  description?: string | null;
+  discountType: 'PERCENT' | 'FLAT';
+  discountValue: number;
+  minOrderValue: number;
+  maxDiscount?: number | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  isActive: boolean;
+  expiresAt?: string | Date | null;
+  createdAt?: string | Date;
+}
+
+export function AdminCouponManager({ initialCoupons }: { initialCoupons: CouponItem[] }) {
   const router = useRouter();
   const [coupons, setCoupons] = useState(initialCoupons);
 
@@ -19,6 +34,47 @@ export function AdminCouponManager({ initialCoupons }: { initialCoupons: any[] }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch('/api/admin/coupons', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive: !currentStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update coupon');
+      setCoupons((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, isActive: !currentStatus } : c))
+      );
+      router.refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error updating coupon');
+    }
+  };
+
+  const handleDelete = async (id: string, code: string) => {
+    if (!confirm(`Are you sure you want to delete or deactivate coupon "${code}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/coupons?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete coupon');
+      if (data.coupon && !data.coupon.isActive) {
+        setCoupons((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, isActive: false } : c))
+        );
+        alert('Coupon had existing redemptions and was deactivated.');
+      } else {
+        setCoupons((prev) => prev.filter((c) => c.id !== id));
+      }
+      router.refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error deleting coupon');
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +132,11 @@ export function AdminCouponManager({ initialCoupons }: { initialCoupons: any[] }
                   <span className="px-2 py-0.5 rounded-sm bg-[#EAE2D5] text-[#262320] font-semibold text-[10px]">
                     {c.discountType === 'PERCENT' ? `${c.discountValue}% OFF` : `${formatPrice(c.discountValue)} OFF`}
                   </span>
+                  {!c.isActive && (
+                    <span className="px-1.5 py-0.5 rounded-sm bg-[#FAF0F0] text-[#8C2B2B] text-[10px] font-medium border border-[#D9B5B5]">
+                      Inactive
+                    </span>
+                  )}
                 </div>
                 {c.description && <p className="text-[#5C554C]">{c.description}</p>}
                 <p className="text-[11px] text-[#8A8175]">
@@ -83,6 +144,29 @@ export function AdminCouponManager({ initialCoupons }: { initialCoupons: any[] }
                   {c.maxDiscount && `| Max discount: ${formatPrice(c.maxDiscount)}`}{' '}
                   | Redemptions: {c.usageCount} {c.usageLimit ? `/ ${c.usageLimit}` : ''}
                 </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleToggleActive(c.id, c.isActive)}
+                  className={`px-2.5 py-1 text-[11px] rounded-sm border transition-colors ${
+                    c.isActive
+                      ? 'bg-[#EAE2D5] text-[#2A5C38] border-[#D1C6B4] hover:bg-[#FAF0F0] hover:text-[#8C2B2B]'
+                      : 'bg-[#FAF0F0] text-[#8C2B2B] border-[#D9B5B5] hover:bg-[#EAE2D5] hover:text-[#2A5C38]'
+                  }`}
+                >
+                  {c.isActive ? 'Active' : 'Disabled'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(c.id, c.code)}
+                  className="p-1 text-[#8A8175] hover:text-[#8C2B2B] hover:bg-[#FAF0F0] rounded-sm transition-colors"
+                  title="Delete or deactivate coupon"
+                  aria-label={`Delete coupon ${c.code}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}
@@ -119,7 +203,7 @@ export function AdminCouponManager({ initialCoupons }: { initialCoupons: any[] }
             <label className="block text-[#5C554C]">Discount Type *</label>
             <select
               value={discountType}
-              onChange={(e) => setDiscountType(e.target.value as any)}
+              onChange={(e) => setDiscountType(e.target.value as 'PERCENT' | 'FLAT')}
               className="w-full px-2.5 py-1.5 border border-[#E2DACD] rounded-sm bg-[#FAF6EF] text-[#262320]"
             >
               <option value="PERCENT">Percentage Discount (%)</option>
