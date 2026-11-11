@@ -20,6 +20,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Role } from '@prisma/client';
+import { PATHS, isPathActive } from '@/lib/paths';
 
 interface AdminSidebarProps {
   role?: Role;
@@ -29,35 +30,32 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
   const pathname = usePathname();
 
   // If on admin login page, hide sidebar
-  if (pathname === '/admin/login') {
+  if (pathname === PATHS.admin.login()) {
     return null;
   }
 
   const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-    { href: '/admin/products', label: 'Products & Artworks', icon: Package },
-    { href: '/admin/categories', label: 'Categories', icon: Layers },
-    { href: '/admin/orders', label: 'Orders & Shipments', icon: ShoppingBag },
-    { href: '/admin/payments', label: 'Payments & Refunds', icon: CreditCard },
-    { href: '/admin/customers', label: 'Customers', icon: Users },
-    { href: '/admin/activity', label: 'Activity & Funnel', icon: Activity },
-    { href: '/admin/inventory', label: 'Inventory & Stock', icon: Warehouse },
-    { href: '/admin/coupons', label: 'Discount Coupons', icon: Tag },
-    { href: '/admin/reviews', label: 'Reviews Moderation', icon: MessageSquare },
-    { href: '/admin/enquiries', label: 'Inquiries & Commissions', icon: MailQuestion },
-    { href: '/admin/newsletter', label: 'Newsletter Subscribers', icon: Mail },
-    { href: '/admin/settings', label: 'Gallery Settings', icon: Settings },
-    { href: '/admin/audit-log', label: 'Audit Trail', icon: ShieldCheck },
+    { href: PATHS.admin.dashboard, label: 'Dashboard', icon: LayoutDashboard, exact: true },
+    { href: PATHS.admin.products, label: 'Products & Artworks', icon: Package },
+    { href: PATHS.admin.categories, label: 'Categories', icon: Layers },
+    { href: PATHS.admin.orders, label: 'Orders & Shipments', icon: ShoppingBag },
+    { href: PATHS.admin.payments, label: 'Payments & Refunds', icon: CreditCard },
+    { href: PATHS.admin.customers, label: 'Customers', icon: Users },
+    { href: PATHS.admin.activity, label: 'Activity & Funnel', icon: Activity },
+    { href: PATHS.admin.inventory, label: 'Inventory & Stock', icon: Warehouse },
+    { href: PATHS.admin.coupons, label: 'Discount Coupons', icon: Tag },
+    { href: PATHS.admin.reviews, label: 'Reviews Moderation', icon: MessageSquare },
+    { href: PATHS.admin.enquiries, label: 'Inquiries & Commissions', icon: MailQuestion },
+    { href: PATHS.admin.newsletter, label: 'Newsletter Subscribers', icon: Mail },
+    { href: PATHS.admin.settings, label: 'Gallery Settings', icon: Settings },
+    { href: PATHS.admin.auditLog, label: 'Audit Trail', icon: ShieldCheck },
   ];
 
   return (
     <aside className="w-64 bg-[#FAF7F2] border-r border-[#E2DACD] flex flex-col shrink-0 overflow-y-auto hidden md:flex">
       <div className="p-4 space-y-1">
         {navItems.map((item) => {
-          const isActive = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
-
+          const isActive = isPathActive(pathname, item.href, item.exact);
           const Icon = item.icon;
 
           return (
@@ -83,4 +81,3 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
     </aside>
   );
 }
-

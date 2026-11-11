@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { Filter, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Prisma } from '@prisma/client';
+import { PATHS } from '@/lib/paths';
 
 // Dynamic catalog page
 
@@ -53,8 +54,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const variantConditions: Prisma.ProductVariantWhereInput = {};
   if (minPrice !== undefined || maxPrice !== undefined) {
     const priceFilter: Prisma.IntFilter = {};
-    if (minPrice !== undefined) priceFilter.gte = minPrice * 100;
-    if (maxPrice !== undefined) priceFilter.lte = maxPrice * 100;
+    if (minPrice !== undefined) priceFilter.gte = minPrice;
+    if (maxPrice !== undefined) priceFilter.lte = maxPrice;
     variantConditions.price = priceFilter;
   }
   if (inStockOnly) {
@@ -65,11 +66,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     where.variants = { some: variantConditions };
   }
 
+  // Optimize: run category fetch in parallel with main queries
   const categoriesPromise = prisma.category.findMany({
-    where: { isActive: true },
     orderBy: { displayOrder: 'asc' },
+    select: { id: true, name: true, slug: true },
   });
 
+  // Query products with pagination
   let totalCount = 0;
   let products: Array<
     Prisma.ProductGetPayload<{
@@ -81,32 +84,34 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
     }>
   > = [];
 
-  if (currentSort === 'price_asc' || currentSort === 'price_desc') {
+  const includeRelations = {
+    category: true,
+    images: { orderBy: { displayOrder: 'asc' as const }, take: 1 },
+    variants: { orderBy: { price: 'asc' as const } },
+  };
+
+  if (currentSort === 'price-asc' || currentSort === 'price-desc') {
+    // If sorting by price, retrieve filtered products and sort by default variant price
     const allMatching = await prisma.product.findMany({
       where,
-      include: {
-        category: true,
-        images: { orderBy: { displayOrder: 'asc' } },
-        variants: { orderBy: { price: 'asc' } },
-      },
+      include: includeRelations,
     });
     totalCount = allMatching.length;
+
     allMatching.sort((a, b) => {
-      const minA = a.variants[0]?.price ?? 0;
-      const minB = b.variants[0]?.price ?? 0;
-      return currentSort === 'price_asc' ? minA - minB : minB - minA;
+      const priceA = a.variants[0]?.price || 0;
+      const priceB = b.variants[0]?.price || 0;
+      return currentSort === 'price-asc' ? priceA - priceB : priceB - priceA;
     });
+
     products = allMatching.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   } else {
+    // Native database pagination for chronological sorting
     const [count, items] = await Promise.all([
       prisma.product.count({ where }),
       prisma.product.findMany({
         where,
-        include: {
-          category: true,
-          images: { orderBy: { displayOrder: 'asc' } },
-          variants: { orderBy: { price: 'asc' } },
-        },
+        include: includeRelations,
         orderBy: currentSort === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' },
         skip: (currentPage - 1) * pageSize,
         take: pageSize,
@@ -124,8 +129,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   // Helper to build URL with search params
   const createFilterUrl = (overrides: Record<string, string | undefined>) => {
-    const q = new URLSearchParams();
-    const merged = {
+    return PATHS.catalog({
       category: currentCategory,
       search: currentSearch,
       sort: currentSort,
@@ -134,13 +138,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       maxPrice: params.maxPrice,
       inStock: params.inStock,
       ...overrides,
-    };
-
-    Object.entries(merged).forEach(([k, v]) => {
-      if (v) q.set(k, v);
     });
-
-    return `/catalog?${q.toString()}`;
   };
 
   return (
@@ -148,57 +146,59 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       {/* Title & Active Filter Summary */}
       <div className="border-b border-[#E2DACD] pb-6 space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-          <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#262320]">
-            {currentCategory
-              ? categories.find((c) => c.slug === currentCategory)?.name || 'Paintings'
-              : currentSearch
-              ? `Search: "${currentSearch}"`
-              : 'All Devotional Paintings'}
-          </h1>
-          <span className="text-xs text-[#8A8175]">
-            Showing {totalCount === 0 ? 0 : `${startItem}–${endItem}`} of {totalCount} artworks
-          </span>
+          <div>
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#1C1917]">
+              {currentCategory
+                ? categories.find((c) => c.slug === currentCategory)?.name || 'Artworks Collection'
+                : 'Devotional Artwork Collection'}
+            </h1>
+            <p className="text-xs text-[#7A694F] mt-1">
+              Hand painted and framed in Nathdwara using traditional mineral and stone pigments.
+            </p>
+          </div>
+
+          <p className="text-xs text-[#7A694F]">
+            Showing <span className="font-medium text-[#1C1917]">{startItem}-{endItem}</span> of{' '}
+            <span className="font-medium text-[#1C1917]">{totalCount}</span> paintings
+          </p>
         </div>
-        <p className="text-xs text-[#5C554C] max-w-2xl">
-          Authentic Pichwai paintings, sanctum portraits, and miniature devotional artworks. All pieces are handcrafted in Nathdwara.
-        </p>
 
         {/* Active Filters Pill Bar */}
-        {(currentCategory || currentSearch || inStockOnly || currentSort !== 'newest') && (
-          <div className="pt-3 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-[#8A8175] flex items-center gap-1">
-              <Filter className="w-3 h-3" />
-              Active:
+        {(currentCategory || currentSearch || inStockOnly) && (
+          <div className="flex flex-wrap items-center gap-2 pt-3">
+            <span className="text-[11px] text-[#7A694F] font-medium flex items-center gap-1">
+              <Filter className="w-3 h-3 text-[#B8511B]" />
+              Filters:
             </span>
             {currentCategory && (
               <Link
                 href={createFilterUrl({ category: undefined })}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-white border border-[#E8E2D8] rounded-sm text-[#1C1917] hover:border-[#B8511B] shadow-xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-[#DEC99C] rounded-sm text-xs text-[#231C10] hover:border-[#B8511B] transition-colors"
               >
-                <span>Category: {currentCategory}</span>
+                <span>Category: {categories.find((c) => c.slug === currentCategory)?.name}</span>
                 <X className="w-3 h-3 text-[#B8511B]" />
               </Link>
             )}
             {currentSearch && (
               <Link
                 href={createFilterUrl({ search: undefined })}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-white border border-[#E8E2D8] rounded-sm text-[#1C1917] hover:border-[#B8511B] shadow-xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-[#DEC99C] rounded-sm text-xs text-[#231C10] hover:border-[#B8511B] transition-colors"
               >
-                <span>Search: {currentSearch}</span>
+                <span>Search: &ldquo;{currentSearch}&rdquo;</span>
                 <X className="w-3 h-3 text-[#B8511B]" />
               </Link>
             )}
             {inStockOnly && (
               <Link
                 href={createFilterUrl({ inStock: undefined })}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-white border border-[#E8E2D8] rounded-sm text-[#1C1917] hover:border-[#B8511B] shadow-xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-[#DEC99C] rounded-sm text-xs text-[#231C10] hover:border-[#B8511B] transition-colors"
               >
                 <span>In Stock Only</span>
                 <X className="w-3 h-3 text-[#B8511B]" />
               </Link>
             )}
             <Link
-              href="/catalog"
+              href={PATHS.catalog()}
               className="text-[11px] text-[#8A8175] hover:text-[#262320] underline ml-2"
             >
               Clear all
@@ -208,81 +208,82 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Sidebar Filters */}
-        <aside className="space-y-6 lg:border-r lg:border-[#E2DACD] lg:pr-8">
-          {/* Categories */}
-          <div className="space-y-3">
-            <h3 className="font-serif text-sm font-semibold text-[#262320] flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-[#8A8175]" />
-              <span>Categories</span>
-            </h3>
-            <ul className="space-y-1.5 text-xs">
-              <li>
-                <Link
-                  href={createFilterUrl({ category: undefined })}
-                  className={`block py-1.5 px-2.5 rounded-sm transition-colors ${
-                    !currentCategory
-                      ? 'bg-[#1C1917] text-white font-medium shadow-xs'
-                      : 'text-[#57534E] hover:text-[#1C1917] hover:bg-white'
-                  }`}
-                >
-                  All Artworks
-                </Link>
-              </li>
-              {categories.map((cat) => {
-                const isSelected = currentCategory === cat.slug;
-                return (
-                  <li key={cat.id}>
-                    <Link
-                      href={createFilterUrl({ category: cat.slug })}
-                      className={`block py-1.5 px-2.5 rounded-sm transition-colors ${
-                        isSelected
-                          ? 'bg-[#1C1917] text-white font-medium shadow-xs'
-                          : 'text-[#57534E] hover:text-[#1C1917] hover:bg-white'
-                      }`}
-                    >
-                      {cat.name}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+        {/* Left Sidebar Filter Column */}
+        <aside className="space-y-6">
+          <div className="bg-[#FAF7F2] border border-[#E2DACD] rounded-sm p-5 space-y-6">
+            <div className="flex items-center gap-2 border-b border-[#E2DACD] pb-3 text-[#262320]">
+              <SlidersHorizontal className="w-4 h-4 text-[#C47820]" />
+              <h2 className="font-serif text-base font-semibold">Filter Collection</h2>
+            </div>
 
-          {/* Availability Filter */}
-          <div className="space-y-3 pt-4 border-t border-[#ECE5DA]">
-            <h3 className="font-serif text-sm font-semibold text-[#262320]">
-              Availability
-            </h3>
-            <div className="space-y-2 text-xs">
-              <Link
-                href={createFilterUrl({ inStock: inStockOnly ? undefined : 'true' })}
-                className={`flex items-center gap-2 py-1 px-2 rounded-sm border transition-colors ${
-                  inStockOnly
-                    ? 'border-[#262320] bg-[#FAF7F2] text-[#262320] font-medium'
-                    : 'border-[#E2DACD] text-[#5C554C] hover:text-[#262320]'
-                }`}
-              >
-                <span
-                  className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center ${
-                    inStockOnly ? 'bg-[#262320] border-[#262320]' : 'border-[#D1C6B4]'
-                  }`}
+            {/* Category Filter List */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-[#262320] uppercase tracking-wider">
+                Categories
+              </h3>
+              <ul className="space-y-1.5 text-xs">
+                <li>
+                  <Link
+                    href={createFilterUrl({ category: undefined })}
+                    className={`block py-1 px-2 rounded-xs transition-colors ${
+                      !currentCategory
+                        ? 'bg-[#262320] text-[#FAF6EF] font-medium'
+                        : 'text-[#5C554C] hover:text-[#262320] hover:bg-[#F4EFE6]'
+                    }`}
+                  >
+                    All Collections
+                  </Link>
+                </li>
+                {categories.map((cat) => {
+                  const isActive = currentCategory === cat.slug;
+                  return (
+                    <li key={cat.id}>
+                      <Link
+                        href={createFilterUrl({ category: cat.slug })}
+                        className={`block py-1 px-2 rounded-xs transition-colors ${
+                          isActive
+                            ? 'bg-[#262320] text-[#FAF6EF] font-medium'
+                            : 'text-[#5C554C] hover:text-[#262320] hover:bg-[#F4EFE6]'
+                        }`}
+                      >
+                        {cat.name}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            {/* Availability Filter */}
+            <div className="border-t border-[#E2DACD] pt-5 space-y-3">
+              <h3 className="text-xs font-semibold text-[#262320] uppercase tracking-wider">
+                Availability
+              </h3>
+              <label className="flex items-center gap-2 text-xs text-[#5C554C] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  readOnly
+                  className="rounded-xs border-[#E2DACD] text-[#C47820] focus-ring"
+                />
+                <Link
+                  href={createFilterUrl({ inStock: inStockOnly ? undefined : 'true' })}
+                  className="hover:text-[#262320]"
                 >
-                  {inStockOnly && <span className="w-1.5 h-1.5 bg-white" />}
-                </span>
-                <span>Ready in Nathdwara gallery</span>
-              </Link>
+                  In Stock in Nathdwara only
+                </Link>
+              </label>
             </div>
           </div>
 
-          {/* Framing / Commission note */}
-          <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs space-y-2">
+          {/* Need Custom Painting helper box */}
+          <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-2 text-xs">
             <p className="font-serif font-semibold text-[#262320]">Need Custom Sizing?</p>
             <p className="text-[#5C554C] leading-relaxed">
               We prepare paintings in exact custom dimensions with personalized border colors and frame types.
             </p>
             <Link
-              href="/custom-order"
+              href={PATHS.customOrder}
               className="inline-block text-[#C47820] font-medium hover:underline pt-1"
             >
               Request Custom Painting
@@ -293,45 +294,45 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         {/* Catalog Main Content */}
         <div className="lg:col-span-3 space-y-6">
           {/* Sorting Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs">
-            <span className="text-[#5C554C]">
-              {totalCount === 0 ? 'No paintings found' : `Showing ${startItem}–${endItem} of ${totalCount} artworks`}
-            </span>
-
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs">
+            <div className="flex items-center gap-2 text-[#5C554C]">
               <ArrowUpDown className="w-3.5 h-3.5 text-[#8A8175]" />
-              <span className="text-[#5C554C]">Sort:</span>
-              <div className="flex gap-1.5">
-                {[
-                  { key: 'newest', label: 'Newest' },
-                  { key: 'price_asc', label: 'Price: Low to High' },
-                  { key: 'price_desc', label: 'Price: High to Low' },
-                ].map((s) => (
+              <span>Sort by:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { key: 'newest', label: 'Newest Arrivals' },
+                { key: 'price-asc', label: 'Price: Low to High' },
+                { key: 'price-desc', label: 'Price: High to Low' },
+                { key: 'oldest', label: 'Oldest' },
+              ].map((s) => {
+                const isActive = currentSort === s.key;
+                return (
                   <Link
                     key={s.key}
                     href={createFilterUrl({ sort: s.key })}
-                    className={`px-2.5 py-1 rounded-sm border transition-colors ${
-                      currentSort === s.key
-                        ? 'border-[#262320] bg-[#262320] text-[#FAF6EF] font-medium'
-                        : 'border-[#E2DACD] bg-[#FAF6EF] text-[#5C554C] hover:text-[#262320]'
+                    className={`px-2.5 py-1 rounded-sm transition-colors ${
+                      isActive
+                        ? 'bg-[#262320] text-[#FAF6EF] font-medium'
+                        : 'text-[#5C554C] hover:text-[#262320] hover:bg-[#F4EFE6]'
                     }`}
                   >
                     {s.label}
                   </Link>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Product Grid */}
+          {/* Paintings Grid */}
           {products.length === 0 ? (
-            <div className="p-12 text-center bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-3">
-              <p className="font-serif text-lg text-[#262320]">No paintings found</p>
+            <div className="text-center py-20 bg-white border border-[#DEC99C] rounded-sm space-y-4">
+              <p className="font-serif text-xl text-[#231C10]">No paintings found</p>
               <p className="text-xs text-[#5C554C] max-w-sm mx-auto">
                 No artworks matched your selected category or search filters.
               </p>
               <div className="pt-2">
-                <Link href="/catalog" className="btn-secondary text-xs py-2 px-4">
+                <Link href={PATHS.catalog()} className="btn-secondary text-xs py-2 px-4">
                   Reset All Filters
                 </Link>
               </div>
@@ -350,8 +351,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                     title={p.title}
                     slug={p.slug}
                     medium={p.medium}
-                    categoryName={p.category.name}
-                    price={defaultVariant ? defaultVariant.price : 0}
+                    categoryName={p.category?.name}
+                    price={defaultVariant?.price ?? 0}
                     mrp={defaultVariant?.mrp}
                     image={primaryImg}
                     stock={totalStock}
@@ -361,31 +362,36 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             </div>
           )}
 
-          {/* Pagination */}
+          {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="pt-8 border-t border-[#E2DACD] flex items-center justify-between">
+            <div className="pt-8 border-t border-[#E2DACD] flex items-center justify-between text-xs">
               <Link
                 href={currentPage > 1 ? createFilterUrl({ page: String(currentPage - 1) }) : '#'}
-                className={`btn-secondary text-xs py-2 px-3 flex items-center gap-1 ${
-                  currentPage <= 1 ? 'pointer-events-none opacity-40' : ''
+                className={`flex items-center gap-1 px-3 py-2 border rounded-sm transition-colors ${
+                  currentPage > 1
+                    ? 'border-[#E2DACD] text-[#262320] hover:bg-[#FAF7F2]'
+                    : 'border-[#ECE5DA] text-[#D1C6B4] pointer-events-none'
                 }`}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
               </Link>
 
-              <span className="text-xs text-[#5C554C]">
-                Page {currentPage} of {totalPages}
+              <span className="text-[#5C554C]">
+                Page <span className="font-medium text-[#262320]">{currentPage}</span> of{' '}
+                <span className="font-medium text-[#262320]">{totalPages}</span>
               </span>
 
               <Link
                 href={currentPage < totalPages ? createFilterUrl({ page: String(currentPage + 1) }) : '#'}
-                className={`btn-secondary text-xs py-2 px-3 flex items-center gap-1 ${
-                  currentPage >= totalPages ? 'pointer-events-none opacity-40' : ''
+                className={`flex items-center gap-1 px-3 py-2 border rounded-sm transition-colors ${
+                  currentPage < totalPages
+                    ? 'border-[#E2DACD] text-[#262320] hover:bg-[#FAF7F2]'
+                    : 'border-[#ECE5DA] text-[#D1C6B4] pointer-events-none'
                 }`}
               >
                 <span>Next</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
           )}

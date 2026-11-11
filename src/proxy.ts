@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { PATHS } from '@/lib/paths';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect admin paths except /admin/login
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  if (pathname.startsWith(PATHS.admin.dashboard) && pathname !== PATHS.admin.login()) {
     const authSecret =
       process.env.NEXTAUTH_SECRET ||
       (process.env.NODE_ENV === 'production' ? undefined : 'dev_secret_key_change_in_production');
     if (!authSecret) {
       console.error('CRITICAL: NEXTAUTH_SECRET must be set in production environment.');
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('error', 'server_error');
+      const loginUrl = new URL(PATHS.admin.login(undefined, 'server_error'), request.url);
       return NextResponse.redirect(loginUrl);
     }
 
@@ -23,14 +23,12 @@ export async function proxy(request: NextRequest) {
     });
 
     if (!token) {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('callbackUrl', pathname);
+      const loginUrl = new URL(PATHS.admin.login(pathname), request.url);
       return NextResponse.redirect(loginUrl);
     }
 
     if (token.role !== 'OWNER' && token.role !== 'STAFF') {
-      const loginUrl = new URL('/admin/login', request.url);
-      loginUrl.searchParams.set('error', 'unauthorized');
+      const loginUrl = new URL(PATHS.admin.login(undefined, 'unauthorized'), request.url);
       return NextResponse.redirect(loginUrl);
     }
   }

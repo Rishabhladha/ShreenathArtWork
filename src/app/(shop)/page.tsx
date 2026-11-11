@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import prisma from '@/lib/prisma';
 import { ProductCard } from '@/components/shop/ProductCard';
+import { PATHS } from '@/lib/paths';
 import { MapPin, Phone, Clock, ArrowRight, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 
 export default async function HomePage() {
@@ -38,10 +39,10 @@ export default async function HomePage() {
                 Authentic Pichwai paintings, sanctum portraits, and festive utsav compositions. Every artwork is handcrafted with natural mineral pigments, 24kt gold foil, and seasoned teak wood framing by traditional lineage artists.
               </p>
               <div className="pt-1 flex flex-wrap gap-4">
-                <Link href="/catalog" className="btn-primary text-sm py-3 px-6 shadow-sm">
+                <Link href={PATHS.catalog()} className="btn-primary text-sm py-3 px-6 shadow-sm">
                   Browse Paintings
                 </Link>
-                <Link href="/custom-order" className="btn-accent text-sm py-3 px-6 shadow-sm">
+                <Link href={PATHS.customOrder} className="btn-accent text-sm py-3 px-6 shadow-sm">
                   Commission Custom Work
                 </Link>
               </div>
@@ -53,102 +54,108 @@ export default async function HomePage() {
                   <p className="text-[11px] mt-0.5">Nathdwara Art Tradition</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-sm text-[#231C10]">Pure 24kt Gold</p>
-                  <p className="text-[11px] mt-0.5">& Stone Mineral Pigments</p>
+                  <p className="font-semibold text-sm text-[#231C10]">100% Genuine</p>
+                  <p className="text-[11px] mt-0.5">Mineral & Stone Pigments</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-sm text-[#231C10]">Insured Transit</p>
-                  <p className="text-[11px] mt-0.5">Dispatched Across India</p>
+                  <p className="font-semibold text-sm text-[#231C10]">Safe Delivery</p>
+                  <p className="text-[11px] mt-0.5">Insured Wooden Box Transit</p>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Framed Masterpiece Artwork */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative group max-w-sm sm:max-w-md w-full">
-                {/* Museum Style Carved Teak & Gold Mat Frame */}
-                <div className="p-3 sm:p-4 bg-[#231C10] border-2 border-[#C59B27] rounded-sm shadow-2xl transition-transform duration-300 group-hover:scale-[1.01]">
-                  <div className="relative aspect-[3/4] overflow-hidden rounded-xs bg-[#1C160E] border border-[#DEC99C]/60">
-                    <Image
-                      src="https://u3j1809ecuiuxa6g.public.blob.vercel-storage.com/artworks/shreenathji-shrine.webp"
-                      alt="Jeweled Shreenathji Shrine with Lotus Offerings"
-                      fill
-                      priority
-                      sizes="(max-width: 768px) 100vw, 420px"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-
-                  {/* Brass Caption Plaque */}
-                  <div className="mt-3.5 text-center border-t border-[#DEC99C]/30 pt-2.5 px-2">
-                    <p className="font-serif text-base font-semibold text-[#FAF2DC] tracking-wide">
-                      Jeweled Shreenathji Sanctum Shrine
-                    </p>
-                    <p className="text-[11px] font-sans text-[#DEC99C] tracking-wider uppercase mt-0.5">
-                      Natural Stone Pigments & Gold Leaf • Nathdwara
-                    </p>
-                  </div>
-                </div>
+            {/* Right Column: Hero Artwork Showcase */}
+            <div className="lg:col-span-5 relative w-full aspect-[4/5] sm:aspect-[4/5] max-w-md mx-auto lg:max-w-none rounded-sm overflow-hidden border-2 border-[#DEC99C] shadow-[0_16px_40px_rgba(35,28,16,0.14)] bg-[#231C10]">
+              <Image
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hero-shreenathji-shrine.webp"
+                alt="Sacred Shreenathji shrine sanctum portrait hand painted with natural mineral pigments and real gold foil"
+                fill
+                priority={true}
+                sizes="(max-width: 1024px) 100vw, 42vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-[#231C10]/95 via-[#231C10]/70 to-transparent text-[#FAF7EE]">
+                <p className="text-[10px] tracking-widest uppercase text-[#DEC99C] font-sans font-semibold">
+                  Original Sanctum Artwork
+                </p>
+                <p className="font-serif text-sm font-semibold mt-0.5">
+                  Shreenathji Manorath Shringaar with Lotus Pond
+                </p>
+                <p className="text-[11px] text-[#D8CCA9] mt-0.5">
+                  Pichwai on Handspun Cotton, Antique Teak Framing
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Gallery Trust & Commitments */}
+      {/* Trust & Craft Standards Banner */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 sm:p-8 bg-white border border-[#E8E2D8] rounded-sm shadow-sm">
-          <div className="flex items-start gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 p-6 sm:p-8 bg-white border border-[#E8E2D8] rounded-sm">
+          <div className="flex items-start gap-3.5">
             <Sparkles className="w-5 h-5 text-[#B8511B] shrink-0 mt-0.5" />
-            <div className="space-y-1">
+            <div>
               <h3 className="font-serif text-sm font-semibold text-[#1C1917]">
-                Traditional Nathdwara Methods
+                Natural Stone Pigments
               </h3>
-              <p className="text-xs text-[#57534E] leading-relaxed">
-                Hand painted on cotton cloth and wasli paper using natural stone colors, zinc white, and gold foil.
+              <p className="text-xs text-[#57534E] mt-1 leading-relaxed">
+                Hand-ground mineral colors, lapis lazuli, turmeric yellow, and genuine 24-karat gold leaf work.
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-[#B8511B] shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h3 className="font-serif text-sm font-semibold text-[#1C1917]">
-                Seasoned Teak and Gold Framing
-              </h3>
-              <p className="text-xs text-[#57534E] leading-relaxed">
-                Each artwork is framed with archival mount boards, dust backing, and hanging hardware installed.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3.5">
             <Truck className="w-5 h-5 text-[#B8511B] shrink-0 mt-0.5" />
-            <div className="space-y-1">
+            <div>
               <h3 className="font-serif text-sm font-semibold text-[#1C1917]">
-                Insured Wooden Crate Shipping
+                Insured Crating & Dispatch
               </h3>
-              <p className="text-xs text-[#57534E] leading-relaxed">
-                Dispatched with multi-layer bubble wrap in reinforced timber crates across India.
+              <p className="text-xs text-[#57534E] mt-1 leading-relaxed">
+                Shipped in reinforced moisture-sealed wooden boxes across India and internationally.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3.5">
+            <ShieldCheck className="w-5 h-5 text-[#B8511B] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-serif text-sm font-semibold text-[#1C1917]">
+                Certificate of Authenticity
+              </h3>
+              <p className="text-xs text-[#57534E] mt-1 leading-relaxed">
+                Every original Pichwai includes provenance details signed by the artisan family in Nathdwara.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3.5">
+            <Clock className="w-5 h-5 text-[#B8511B] shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-serif text-sm font-semibold text-[#1C1917]">
+                Custom Sizes on Request
+              </h3>
+              <p className="text-xs text-[#57534E] mt-1 leading-relaxed">
+                Tailored dimensions to fit your home sanctum, pooja room, or gallery wall.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Shop by Category */}
+      {/* Categories Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#E8E2D8] pb-4">
           <div>
             <span className="text-xs uppercase tracking-widest text-[#B8511B] font-sans font-semibold">
-              Art Traditions
+              Curated Collections
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1C1917] mt-1">
               Shop by Category
             </h2>
           </div>
           <Link
-            href="/catalog"
+            href={PATHS.catalog()}
             className="text-xs font-medium text-[#1C1917] hover:text-[#B8511B] flex items-center gap-1"
           >
             <span>View All Categories</span>
@@ -160,7 +167,7 @@ export default async function HomePage() {
           {categories.map((cat) => (
             <Link
               key={cat.id}
-              href={`/catalog?category=${cat.slug}`}
+              href={PATHS.category(cat.slug)}
               className="p-5 bg-white border border-[#E8E2D8] rounded-sm hover:border-[#1C1917] hover:shadow-md transition-all flex flex-col justify-between space-y-3 group"
             >
               <div>
@@ -192,7 +199,7 @@ export default async function HomePage() {
             </h2>
           </div>
           <Link
-            href="/catalog"
+            href={PATHS.catalog()}
             className="text-xs font-medium text-[#1C1917] hover:text-[#B8511B] flex items-center gap-1"
           >
             <span>Explore Entire Catalog</span>
@@ -200,38 +207,44 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProducts.map((p) => {
-            const defaultVariant = p.variants.find((v) => v.isDefault) || p.variants[0];
-            const primaryImg = p.images[0]?.url || '/placeholder-artwork.svg';
-            const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
+        {featuredProducts.length === 0 ? (
+          <p className="text-xs text-[#78716C] italic py-8 text-center bg-white border border-[#E8E2D8] rounded-sm">
+            Featured artworks are currently being updated by the curator.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredProducts.map((p) => {
+              const defaultVariant = p.variants.find((v) => v.isDefault) || p.variants[0];
+              const primaryImg = p.images[0]?.url || '/placeholder-artwork.svg';
+              const totalStock = p.variants.reduce((acc, v) => acc + v.stock, 0);
 
-            return (
-              <ProductCard
-                key={p.id}
-                id={p.id}
-                title={p.title}
-                slug={p.slug}
-                medium={p.medium}
-                categoryName={p.category.name}
-                price={defaultVariant ? defaultVariant.price : 0}
-                mrp={defaultVariant?.mrp}
-                image={primaryImg}
-                stock={totalStock}
-              />
-            );
-          })}
-        </div>
+              return (
+                <ProductCard
+                  key={p.id}
+                  id={p.id}
+                  title={p.title}
+                  slug={p.slug}
+                  medium={p.medium}
+                  categoryName={p.category?.name}
+                  price={defaultVariant?.price ?? 0}
+                  mrp={defaultVariant?.mrp}
+                  image={primaryImg}
+                  stock={totalStock}
+                />
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* About Preview Section */}
+      {/* Workshop & Heritage Story Callout */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-8 sm:p-12 bg-white border border-[#E8E2D8] rounded-sm shadow-sm items-center">
-          <div className="space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center bg-white border border-[#E8E2D8] rounded-sm p-8 sm:p-12">
+          <div className="space-y-4">
             <span className="text-xs uppercase tracking-widest text-[#B8511B] font-sans font-semibold">
-              Sanctum Art Heritage
+              The Nathdwara Tradition
             </span>
-            <h2 className="font-serif text-2xl sm:text-4xl font-semibold text-[#1C1917] leading-snug">
+            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1C1917]">
               Devotion expressed through stone pigments and gold leaf.
             </h2>
             <p className="text-sm text-[#57534E] leading-relaxed">
@@ -241,7 +254,7 @@ export default async function HomePage() {
               Our workshop works directly with lineage artists residing in Nathdwara. We maintain strict fidelity to classical proportions, traditional iconography, and natural pigments derived from crushed stones and plants.
             </p>
             <div className="pt-2">
-              <Link href="/about" className="btn-secondary text-xs py-2.5 px-5">
+              <Link href={PATHS.info.about} className="btn-secondary text-xs py-2.5 px-5">
                 Read About Our Artists and Process
               </Link>
             </div>
@@ -258,7 +271,7 @@ export default async function HomePage() {
               Our master artists can paint commissioned works tailored to your space, with customized frame finishes and temple-grade packaging.
             </p>
             <div className="pt-2">
-              <Link href="/custom-order" className="btn-accent text-xs py-2.5 px-5 shadow-sm">
+              <Link href={PATHS.customOrder} className="btn-accent text-xs py-2.5 px-5 shadow-sm">
                 Submit Commission Request
               </Link>
             </div>
@@ -270,71 +283,75 @@ export default async function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="border-b border-[#E8E2D8] pb-4">
           <span className="text-xs uppercase tracking-widest text-[#B8511B] font-sans font-semibold">
-            Nathdwara Studio
+            Visit Our Gallery
           </span>
           <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1C1917] mt-1">
-            Visit Our Gallery
+            Art Gallery & Framing Workshop in Nathdwara
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 sm:p-8 bg-white border border-[#E8E2D8] rounded-sm shadow-sm">
-          <div className="space-y-4">
-            <h3 className="font-serif text-xl font-semibold text-[#1C1917]">
-              SHREENATH ART WORK
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 bg-white border border-[#E8E2D8] rounded-sm space-y-3">
+            <div className="w-10 h-10 rounded-sm bg-[#FAF6EF] border border-[#E8E2D8] flex items-center justify-center text-[#B8511B]">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <h3 className="font-serif text-base font-semibold text-[#1C1917]">
+              Gallery Location
             </h3>
             <p className="text-xs text-[#57534E] leading-relaxed">
-              Visitors are welcome to view finished paintings, inspect frame choices in person, and observe ongoing work.
+              {settings?.address || 'Opposite Temple Gate, Nathdwara, Rajsamand District, Rajasthan 313301'}
             </p>
-            <div className="space-y-3 pt-2 text-xs text-[#57534E]">
-              <div className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-[#B8511B] shrink-0 mt-0.5" />
-                <span>
-                  {settings?.address || 'Opposite Temple Gate, Nathdwara, Rajasthan 313301'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-[#B8511B] shrink-0" />
-                <span>
-                  {settings?.openingHours || 'Monday to Sunday: 9:00 AM to 8:30 PM'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-[#B8511B] shrink-0" />
-                <a
-                  href={`tel:${settings?.phone || '9079901405'}`}
-                  className="hover:text-[#B8511B] font-medium"
-                >
-                  {settings?.phone || '9079901405'}
-                </a>
-              </div>
-            </div>
+            <p className="text-[11px] text-[#78716C]">
+              Located steps away from the Shreenathji Temple sanctum.
+            </p>
           </div>
 
-          <div className="flex flex-col justify-between p-6 bg-[#FBF9F5] border border-[#E8E2D8] rounded-sm space-y-4">
-            <div>
-              <h4 className="font-serif text-base font-semibold text-[#1C1917]">
-                Directions to the Gallery
-              </h4>
-              <p className="text-xs text-[#57534E] mt-2 leading-relaxed">
-                Located near the historic Shreenathji Temple in Nathdwara. We recommend reaching out on WhatsApp before visiting so our gallery team can guide your arrival.
-              </p>
+          <div className="p-6 bg-white border border-[#E8E2D8] rounded-sm space-y-3">
+            <div className="w-10 h-10 rounded-sm bg-[#FAF6EF] border border-[#E8E2D8] flex items-center justify-center text-[#B8511B]">
+              <Phone className="w-5 h-5" />
             </div>
-            <div className="flex flex-wrap gap-3">
+            <h3 className="font-serif text-base font-semibold text-[#1C1917]">
+              Phone and WhatsApp
+            </h3>
+            <p className="text-xs text-[#57534E] leading-relaxed">
+              Direct consultation with our gallery curator for custom sizes or temple requirements.
+            </p>
+            <p className="text-xs font-semibold text-[#1C1917]">
+              <a
+                href={`tel:${settings?.phone || '9079901405'}`}
+                className="hover:text-[#B8511B] transition-colors"
+              >
+                {settings?.phone || '+91 9079901405'}
+              </a>
+            </p>
+          </div>
+
+          <div className="p-6 bg-white border border-[#E8E2D8] rounded-sm space-y-3">
+            <div className="w-10 h-10 rounded-sm bg-[#FAF6EF] border border-[#E8E2D8] flex items-center justify-center text-[#B8511B]">
+              <Clock className="w-5 h-5" />
+            </div>
+            <h3 className="font-serif text-base font-semibold text-[#1C1917]">
+              Visiting Hours
+            </h3>
+            <p className="text-xs text-[#57534E] leading-relaxed">
+              {settings?.openingHours || 'Monday to Sunday: 9:00 AM to 8:30 PM (Darshan timings)'}
+            </p>
+            <div className="pt-1 flex gap-2">
               <a
                 href="https://maps.google.com/?q=Nathdwara+Rajasthan+313301"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary text-xs py-2 px-4"
+                className="btn-secondary text-[11px] py-1.5 px-3"
               >
-                Open in Google Maps
+                Directions
               </a>
               <a
                 href="https://wa.me/919079901405"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-primary text-xs py-2 px-4 shadow-sm"
+                className="btn-primary text-[11px] py-1.5 px-3"
               >
-                Message on WhatsApp
+                Chat on WhatsApp
               </a>
             </div>
           </div>

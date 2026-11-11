@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useCartStore } from '@/store/cart-store';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { formatPrice } from '@/lib/money';
+import { PATHS } from '@/lib/paths';
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 
 export function CartDrawer() {
@@ -97,7 +98,7 @@ export function CartDrawer() {
                 </p>
                 <div className="pt-2">
                   <Link
-                    href="/catalog"
+                    href={PATHS.catalog()}
                     onClick={() => setDrawerOpen(false)}
                     className="btn-primary text-xs py-2 px-4"
                   >
@@ -126,7 +127,7 @@ export function CartDrawer() {
                     <div>
                       <div className="flex items-start justify-between gap-2">
                         <Link
-                          href={`/product/${item.slug}`}
+                          href={PATHS.product(item.slug)}
                           onClick={() => setDrawerOpen(false)}
                           className="font-serif text-sm font-semibold text-[#262320] hover:text-[#C47820] line-clamp-1"
                         >
@@ -199,14 +200,14 @@ export function CartDrawer() {
               </p>
               <div className="grid grid-cols-2 gap-2 pt-2">
                 <Link
-                  href="/cart"
+                  href={PATHS.cart}
                   onClick={() => setDrawerOpen(false)}
                   className="btn-secondary text-xs py-2.5 text-center"
                 >
                   View Full Cart
                 </Link>
                 <Link
-                  href="/checkout"
+                  href={PATHS.checkout}
                   onClick={() => setDrawerOpen(false)}
                   className="btn-primary text-xs py-2.5 text-center flex items-center justify-center gap-1.5"
                 >
@@ -221,4 +222,3 @@ export function CartDrawer() {
     </div>
   );
 }
-

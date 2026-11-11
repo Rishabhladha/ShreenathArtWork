@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { formatPrice } from '@/lib/money';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { Heart, Loader2 } from 'lucide-react';
+import { PATHS } from '@/lib/paths';
 
 interface ProductCardProps {
   id: string;
@@ -50,11 +51,13 @@ export function ProductCard({
     setIsNavigating(true);
   };
 
+  const productUrl = PATHS.product(slug);
+
   return (
     <article className="group bg-white border border-[#DEC99C] rounded-sm overflow-hidden flex flex-col transition-all duration-300 shadow-[0_2px_8px_rgba(35,28,16,0.04)] hover:shadow-[0_10px_28px_rgba(35,28,16,0.12)] hover:border-[#B8860B] relative">
       {/* Artwork Image Container */}
       <Link
-        href={`/product/${slug}`}
+        href={productUrl}
         prefetch={true}
         onClick={handleNavigate}
         className="relative block aspect-[4/5] bg-[#F7F2E4] overflow-hidden border-b border-[#DEC99C]/60 focus-ring"
@@ -70,6 +73,7 @@ export function ProductCard({
           src={imgSrc}
           alt={title}
           fill
+          quality={85}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           className={`object-cover transition-all duration-500 group-hover:scale-[1.04] ${
             imgLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
@@ -97,7 +101,7 @@ export function ProductCard({
         <button
           type="button"
           onClick={toggleWishlist}
-          className="absolute top-3 right-3 p-2 bg-white/95 backdrop-blur-sm border border-[#DEC99C] rounded-sm text-[#231C10] hover:text-[#B8860B] transition-colors focus-ring shadow-xs z-10"
+          className="absolute top-3 right-3 p-2 bg-white/95 backdrop-blur-sm border border-[#DEC99C] rounded-sm text-[#231C10] hover:text-[#B8511B] transition-colors focus-ring shadow-xs z-10"
           aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
           <Heart
@@ -117,12 +121,12 @@ export function ProductCard({
       <div className="p-4 flex-1 flex flex-col justify-between space-y-3 bg-white">
         <div>
           {categoryName && (
-            <p className="text-[11px] uppercase tracking-wider text-[#B8860B] font-sans font-semibold">
+            <p className="text-[11px] uppercase tracking-wider text-[#B8511B] font-sans font-semibold">
               {categoryName}
             </p>
           )}
-          <h3 className="font-serif text-base font-semibold text-[#231C10] mt-1 line-clamp-1 group-hover:text-[#B8860B] transition-colors">
-            <Link href={`/product/${slug}`} prefetch={true} onClick={handleNavigate}>
+          <h3 className="font-serif text-base font-semibold text-[#231C10] mt-1 line-clamp-1 group-hover:text-[#B8511B] transition-colors">
+            <Link href={productUrl} prefetch={true} onClick={handleNavigate}>
               {title}
             </Link>
           </h3>

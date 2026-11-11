@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useCartStore } from '@/store/cart-store';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 import { calculateOrderTotals, formatPrice } from '@/lib/money';
+import { PATHS } from '@/lib/paths';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag, Check, AlertCircle } from 'lucide-react';
 
 export default function CartPage() {
@@ -60,24 +61,27 @@ export default function CartPage() {
     setCouponError(null);
 
     try {
-      const res = await fetch('/api/coupon/validate', {
+      const res = await fetch(PATHS.api.coupon.validate, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: couponInput.trim().toUpperCase(),
-          subtotal,
-        }),
+        body: JSON.stringify({ code: couponInput.trim(), subtotal }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Invalid coupon');
+        throw new Error(data.error || 'Invalid discount coupon');
       }
 
-      applyCoupon(data.coupon);
+      applyCoupon({
+        code: data.code,
+        discountAmount: data.discountAmount,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+      });
+
       setCouponInput('');
     } catch (err: unknown) {
-      setCouponError(err instanceof Error ? err.message : 'Coupon could not be applied');
+      setCouponError(err instanceof Error ? err.message : 'Coupon validation failed');
     } finally {
       setCouponLoading(false);
     }
@@ -92,7 +96,7 @@ export default function CartPage() {
           You have not added any artworks to your cart yet. Explore our authentic Pichwai and sanctum devotional paintings from Nathdwara.
         </p>
         <div>
-          <Link href="/catalog" className="btn-primary text-sm py-3 px-6">
+          <Link href={PATHS.catalog()} className="btn-primary text-sm py-3 px-6">
             Browse Artwork Collection
           </Link>
         </div>
@@ -134,7 +138,7 @@ export default function CartPage() {
 
               <div className="flex-1 space-y-1 min-w-0">
                 <Link
-                  href={`/product/${item.slug}`}
+                  href={PATHS.product(item.slug)}
                   className="font-serif text-base font-semibold text-[#262320] hover:text-[#C47820] line-clamp-1"
                 >
                   {item.title}
@@ -142,13 +146,13 @@ export default function CartPage() {
                 <p className="text-xs text-[#5C554C]">
                   Size: {item.size} | Framing: {item.frame}
                 </p>
-                <p className="text-xs text-[#8A8175]">
-                  Unit price: {formatPrice(item.price)}
+                <p className="text-sm font-semibold text-[#262320] mt-1">
+                  {formatPrice(item.price)} each
                 </p>
               </div>
 
-              {/* Quantity Controls */}
-              <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end">
+              {/* Quantity Controls & Remove */}
+              <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-4">
                 <div className="flex items-center border border-[#E2DACD] bg-[#FAF6EF] rounded-sm">
                   <button
                     type="button"
@@ -157,9 +161,9 @@ export default function CartPage() {
                     className="p-1.5 text-[#5C554C] hover:text-[#262320] disabled:opacity-30 focus-ring"
                     aria-label="Decrease quantity"
                   >
-                    <Minus className="w-3.5 h-3.5" />
+                    <Minus className="w-4 h-4" />
                   </button>
-                  <span className="px-3 text-xs font-medium text-[#262320]">
+                  <span className="px-3 text-sm font-medium text-[#262320]">
                     {item.quantity}
                   </span>
                   <button
@@ -169,110 +173,105 @@ export default function CartPage() {
                     className="p-1.5 text-[#5C554C] hover:text-[#262320] disabled:opacity-30 focus-ring"
                     aria-label="Increase quantity"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="text-right min-w-[5rem]">
-                  <span className="text-sm font-semibold text-[#262320]">
+                <div className="flex items-center gap-4">
+                  <span className="font-serif font-semibold text-base text-[#262320]">
                     {formatPrice(item.price * item.quantity)}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="text-[#8A8175] hover:text-[#8C2B2B] p-1 focus-ring"
+                    aria-label="Remove item"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="p-2 text-[#8A8175] hover:text-[#8C2B2B] focus-ring"
-                  aria-label="Remove item"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
             </div>
           ))}
-
-          {/* Safe Delivery Note */}
-          <div className="p-4 bg-[#F4EFE6] border border-[#E2DACD] rounded-sm text-xs text-[#5C554C] space-y-1">
-            <p className="font-semibold text-[#262320]">Safe Transit Assurance</p>
-            <p>
-              Framed paintings are wrapped in foam, sealed in water-resistant film, and shipped in multi-layer corrugated wooden boxes.
-            </p>
-          </div>
         </div>
 
-        {/* Order Summary Card */}
+        {/* Order Summary & Coupon Card */}
         <div className="space-y-6">
-          <div className="p-6 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-5">
-            <h2 className="font-serif text-lg font-semibold text-[#262320] border-b border-[#ECE5DA] pb-3">
+          <div className="bg-[#FAF7F2] border border-[#E2DACD] rounded-sm p-6 space-y-5">
+            <h2 className="font-serif text-lg font-semibold text-[#262320] border-b border-[#E2DACD] pb-3">
               Order Summary
             </h2>
 
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between text-[#5C554C]">
-                <span>Artwork Subtotal</span>
-                <span className="text-[#262320] font-medium">{formatPrice(subtotal)}</span>
+            <div className="space-y-3 text-xs text-[#5C554C]">
+              <div className="flex justify-between">
+                <span>Subtotal ({items.reduce((acc, i) => acc + i.quantity, 0)} items)</span>
+                <span className="font-medium text-[#262320]">{formatPrice(subtotal)}</span>
               </div>
 
               {coupon && (
                 <div className="flex justify-between text-[#2A5C38]">
-                  <span className="flex items-center gap-1">
-                    <Tag className="w-3.5 h-3.5" />
-                    <span>Coupon ({coupon.code})</span>
-                  </span>
-                  <span>- {formatPrice(coupon.discountAmount)}</span>
+                  <span>Discount ({coupon.code})</span>
+                  <span>-{formatPrice(coupon.discountAmount)}</span>
                 </div>
               )}
 
-              <div className="flex justify-between text-[#5C554C]">
-                <span>Insured Shipping</span>
-                <span className="text-[#262320] font-medium">
-                  {shippingFee === 0 ? 'FREE' : formatPrice(shippingFee)}
+              <div className="flex justify-between">
+                <span>Insured Courier Shipping</span>
+                <span>
+                  {shippingFee === 0 ? (
+                    <span className="text-[#2A5C38] font-medium">FREE</span>
+                  ) : (
+                    formatPrice(shippingFee)
+                  )}
                 </span>
               </div>
 
               {gstEnabled && (
-                <div className="flex justify-between text-[#8A8175] text-[11px]">
-                  <span>Estimated GST ({gstRatePercent}% included)</span>
+                <div className="flex justify-between">
+                  <span>Estimated GST ({gstRatePercent}%)</span>
                   <span>{formatPrice(estimatedTax)}</span>
                 </div>
               )}
 
-              <div className="border-t border-[#ECE5DA] pt-3 flex justify-between text-base font-semibold text-[#262320]">
+              <div className="border-t border-[#E2DACD] pt-3 flex justify-between text-base font-semibold text-[#262320]">
                 <span>Total Amount</span>
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
 
-            {/* Coupon Code Input */}
-            <div className="pt-2 border-t border-[#ECE5DA] space-y-2">
+            {/* Discount Coupon Form */}
+            <div className="border-t border-[#E2DACD] pt-4">
               {coupon ? (
-                <div className="flex items-center justify-between p-2.5 bg-[#EAE2D5] border border-[#D1C6B4] rounded-sm text-xs">
-                  <div className="flex items-center gap-1.5 text-[#2A5C38]">
+                <div className="flex items-center justify-between p-2.5 bg-[#F4EFE6] border border-[#2A5C38]/40 rounded-sm text-xs">
+                  <div className="flex items-center gap-1.5 text-[#2A5C38] font-medium">
                     <Check className="w-4 h-4" />
-                    <span>Code <strong>{coupon.code}</strong> applied</span>
+                    <span>Coupon {coupon.code} applied (-{formatPrice(coupon.discountAmount)})</span>
                   </div>
                   <button
                     type="button"
                     onClick={removeCoupon}
-                    className="text-xs text-[#8C2B2B] hover:underline"
+                    className="text-[#8A8175] hover:text-[#8C2B2B] text-[11px] underline ml-2"
                   >
                     Remove
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleApplyCoupon} className="space-y-2">
-                  <div className="flex">
-                    <input
-                      type="text"
-                      placeholder="Coupon Code (e.g. SHREENATH10)"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 text-xs bg-[#FAF6EF] border border-[#E2DACD] rounded-l-sm focus-ring text-[#262320] uppercase"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Tag className="w-3.5 h-3.5 text-[#8A8175] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Coupon code (e.g. WELCOME10)"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        className="w-full pl-8 pr-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring uppercase"
+                      />
+                    </div>
                     <button
                       type="submit"
                       disabled={couponLoading || !couponInput.trim()}
-                      className="bg-[#262320] text-[#FAF6EF] px-3.5 py-2 text-xs hover:bg-[#3D3934] transition-colors rounded-r-sm disabled:opacity-50"
+                      className="btn-secondary text-xs px-3 py-2 disabled:opacity-50"
                     >
                       {couponLoading ? '...' : 'Apply'}
                     </button>
@@ -288,7 +287,7 @@ export default function CartPage() {
             </div>
 
             <Link
-              href="/checkout"
+              href={PATHS.checkout}
               className="w-full btn-primary text-sm py-3 text-center flex items-center justify-center gap-2"
             >
               <span>Proceed to Checkout</span>
@@ -304,4 +303,3 @@ export default function CartPage() {
     </div>
   );
 }
-

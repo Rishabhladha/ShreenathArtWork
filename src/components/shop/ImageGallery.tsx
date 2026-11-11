@@ -50,6 +50,7 @@ export function ImageGallery({ title, images }: ImageGalleryProps) {
           alt={activeImage.altText || title}
           fill
           priority
+          quality={90}
           sizes="(max-width: 768px) 100vw, 50vw"
           className={`object-cover transition-all duration-300 group-hover:scale-[1.01] ${
             isLoading ? 'opacity-0 scale-98' : 'opacity-100 scale-100'
@@ -118,6 +119,7 @@ export function ImageGallery({ title, images }: ImageGalleryProps) {
                 src={activeUrl}
                 alt={activeImage.altText || title}
                 fill
+                quality={95}
                 sizes="100vw"
                 className="object-contain"
                 onError={() => handleImageError(activeImage.url)}

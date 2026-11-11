@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Plus, Trash2, Upload, AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { PATHS } from '@/lib/paths';
 import {
   compressImageForUpload,
   uploadFileWithProgress,
   formatUploadErrorMessage,
+  COMPRESSION_PROFILES,
+  type CompressionQualityProfile,
 } from '@/lib/image-compression';
 
 interface VariantInput {
@@ -137,6 +140,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
   }
 
   const [uploading, setUploading] = useState(false);
+  const [qualityProfile, setQualityProfile] = useState<CompressionQualityProfile>('art-gallery');
   const [uploadState, setUploadState] = useState<UploadProgressState | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -169,6 +173,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
     try {
       // Step 1: Compress image on client side with real-time compression progress
       const compression = await compressImageForUpload(file, {
+        profile: qualityProfile,
         onProgress: (progress) => {
           setUploadState((prev) =>
             prev ? { ...prev, stage: 'compressing', percent: Math.round(progress) } : null
@@ -197,7 +202,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
       formData.append('file', compression.file);
 
       // Step 3: Upload with real-time transfer progress tracking
-      const data = await uploadFileWithProgress('/api/upload', formData, (uploadPercent) => {
+      const data = await uploadFileWithProgress(PATHS.api.upload, formData, (uploadPercent) => {
         setUploadState((prev) =>
           prev ? { ...prev, stage: 'uploading', percent: uploadPercent } : null
         );
@@ -233,7 +238,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
       if (compression.isCompressed) {
         const origMB = (compression.originalSize / (1024 * 1024)).toFixed(2);
         setSuccessMsg(
-          `Image optimized & uploaded! Reduced from ${origMB} MB to ${compressedKB} KB (-${compression.compressionRatio}%).`
+          `High-fidelity photo uploaded! Preserved${compression.width && compression.height ? ` at ${compression.width}x${compression.height}px` : ''}${compression.qualityUsed ? ` (${Math.round(compression.qualityUsed * 100)}% WebP)` : ''}, reduced from ${origMB} MB to ${compressedKB} KB (-${compression.compressionRatio}%).`
         );
         setTimeout(() => setSuccessMsg(null), 6000);
       }
@@ -321,7 +326,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         })),
       };
 
-      const url = isEditing && initialProduct ? `/api/admin/products/${initialProduct.id}` : '/api/admin/products';
+      const url = isEditing && initialProduct?.id ? PATHS.api.admin.product(initialProduct.id) : PATHS.api.admin.products;
       const method = isEditing ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -337,7 +342,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
 
       setSuccessMsg('Painting saved successfully.');
       setTimeout(() => {
-        router.push('/admin/products');
+        router.push(PATHS.admin.products);
         router.refresh();
       }, 1000);
     } catch (err: unknown) {
@@ -347,18 +352,18 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
   };
 
   const handleDelete = async () => {
-    if (!isEditing || !initialProduct) return;
+    if (!isEditing || !initialProduct?.id) return;
     if (!confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) return;
 
     try {
-      const res = await fetch(`/api/admin/products/${initialProduct.id}`, {
+      const res = await fetch(PATHS.api.admin.product(initialProduct.id), {
         method: 'DELETE',
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to delete');
       }
-      router.push('/admin/products');
+      router.push(PATHS.admin.products);
       router.refresh();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Could not delete product');
@@ -370,7 +375,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
       <div className="flex items-center justify-between border-b border-[#E2DACD] pb-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/products"
+            href={PATHS.admin.products}
             className="p-1.5 text-[#8A8175] hover:text-[#262320] border border-[#E2DACD] rounded-sm"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -690,9 +695,14 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
           {/* Artwork Photos */}
           <div className="p-6 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-base font-semibold text-[#262320]">
-                Images ({images.length})
-              </h2>
+              <div>
+                <h2 className="font-serif text-base font-semibold text-[#262320]">
+                  Images ({images.length})
+                </h2>
+                <p className="text-xs text-[#7A7165] mt-0.5">
+                  High-fidelity stepped Canvas downscaling preserves gold foil and fine pigments.
+                </p>
+              </div>
               <label
                 className={`btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 transition-all ${
                   uploading ? 'opacity-70 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
@@ -706,7 +716,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
                 <span>
                   {uploadState
                     ? `${uploadState.stage === 'compressing' ? 'Optimizing' : 'Uploading'} ${uploadState.percent}%`
-                    : 'Upload'}
+                    : 'Upload Photo'}
                 </span>
                 <input
                   type="file"
@@ -718,6 +728,50 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
               </label>
             </div>
 
+            {/* Quality Profile Selector */}
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-xs font-medium text-[#5C554C]">
+                Image Optimization Profile
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {(
+                  Object.keys(COMPRESSION_PROFILES) as CompressionQualityProfile[]
+                ).map((key) => {
+                  const prof = COMPRESSION_PROFILES[key];
+                  const isActive = qualityProfile === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setQualityProfile(key)}
+                      disabled={uploading}
+                      className={`text-left p-2.5 rounded-sm border transition-all ${
+                        isActive
+                          ? 'border-[#A85A32] bg-[#FAF1E8] shadow-xs'
+                          : 'border-[#E2DACD] bg-white hover:border-[#DEC99C]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-xs font-medium ${
+                            isActive ? 'text-[#A85A32]' : 'text-[#262320]'
+                          }`}
+                        >
+                          {prof.name}
+                        </span>
+                        {isActive && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#A85A32]" />
+                        )}
+                      </div>
+                      <p className="text-[10px] text-[#7A7165] mt-1 leading-snug">
+                        {prof.maxDimension}px • {Math.round(prof.quality * 100)}% quality
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Real-time Loading & Progress Bar State */}
             {uploadState && (
               <div className="p-3 bg-white border border-[#E2DACD] rounded-sm space-y-2 shadow-xs">
@@ -726,7 +780,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
                     <Loader2 className="w-3.5 h-3.5 text-[#A85A32] animate-spin shrink-0" />
                     <span>
                       {uploadState.stage === 'compressing'
-                        ? 'Compressing & converting to WebP...'
+                        ? 'Preserving fine detail (stepped downsampling)...'
                         : 'Uploading to gallery storage...'}
                     </span>
                   </span>
@@ -749,7 +803,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
                   </span>
                   <span>
                     {uploadState.stage === 'compressing'
-                      ? 'Resizing to max 1920px'
+                      ? `Max ${COMPRESSION_PROFILES[qualityProfile].maxDimension}px (${Math.round(COMPRESSION_PROFILES[qualityProfile].quality * 100)}% WebP)`
                       : `${uploadState.fileSizeKB ?? ''} KB`}
                   </span>
                 </div>

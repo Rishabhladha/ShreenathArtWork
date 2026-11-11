@@ -3,8 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { LogOut, ExternalLink, Shield } from 'lucide-react';
+import { LogOut, ExternalLink } from 'lucide-react';
 import { Role } from '@prisma/client';
+import { PATHS } from '@/lib/paths';
 
 interface AdminHeaderProps {
   user?: {
@@ -18,7 +19,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
   return (
     <header className="h-16 bg-[#262320] text-[#FAF6EF] px-4 sm:px-6 flex items-center justify-between border-b border-[#3D3934] shrink-0">
       <div className="flex items-center gap-3">
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link href={PATHS.admin.dashboard} className="flex items-center gap-2">
           <span className="font-serif text-lg font-bold tracking-wide">
             SHREENATH ART WORK
           </span>
@@ -30,7 +31,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
       <div className="flex items-center gap-4 text-xs">
         <Link
-          href="/"
+          href={PATHS.home}
           target="_blank"
           className="text-[#E2DACD] hover:text-white flex items-center gap-1.5"
         >
@@ -49,7 +50,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: '/admin/login' })}
+              onClick={() => signOut({ callbackUrl: PATHS.admin.login() })}
               className="p-1.5 text-[#E2DACD] hover:text-white focus-ring rounded-sm"
               title="Sign Out"
             >
@@ -61,4 +62,3 @@ export function AdminHeader({ user }: AdminHeaderProps) {
     </header>
   );
 }
-

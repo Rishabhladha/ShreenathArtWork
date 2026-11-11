@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useSession } from 'next-auth/react';
 import { ShoppingBag, Heart, User, Menu, X, Search, MapPin } from 'lucide-react';
+import { PATHS, isPathActive } from '@/lib/paths';
 
 const emptySubscribe = () => () => {};
 function useMounted() {
@@ -27,20 +28,20 @@ export function Header() {
   const wishlistCount = useWishlistStore((state) => state.items.length);
 
   const navLinks = [
-    { href: '/catalog', label: 'All Paintings' },
-    { href: '/catalog?category=pichwai', label: 'Pichwai' },
-    { href: '/catalog?category=shreenathji-portraits', label: 'Sanctum Portraits' },
-    { href: '/catalog?category=festival-and-utsav', label: 'Festival Art' },
-    { href: '/catalog?category=miniature-art', label: 'Miniature' },
-    { href: '/custom-order', label: 'Custom Orders' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
+    { href: PATHS.catalog(), label: 'All Paintings' },
+    { href: PATHS.category('pichwai'), label: 'Pichwai' },
+    { href: PATHS.category('shreenathji-portraits'), label: 'Sanctum Portraits' },
+    { href: PATHS.category('festival-and-utsav'), label: 'Festival Art' },
+    { href: PATHS.category('miniature-art'), label: 'Miniature' },
+    { href: PATHS.customOrder, label: 'Custom Orders' },
+    { href: PATHS.info.about, label: 'About' },
+    { href: PATHS.info.contact, label: 'Contact' },
   ];
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/catalog?search=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(PATHS.catalog({ search: searchQuery.trim() }));
       setSearchOpen(false);
     }
   };
@@ -71,7 +72,7 @@ export function Header() {
 
             {/* Gallery Branding */}
             <div className="flex flex-col items-center lg:items-start">
-              <Link href="/" className="group text-center lg:text-left">
+              <Link href={PATHS.home} className="group text-center lg:text-left">
                 <span className="block font-serif text-xl sm:text-2xl tracking-widest text-[#1C1917] font-semibold group-hover:text-[#B8511B] transition-colors">
                   SHREENATH ART WORK
                 </span>
@@ -84,7 +85,7 @@ export function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-6 text-sm font-medium">
               {navLinks.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive = isPathActive(pathname, link.href);
                 return (
                   <Link
                     key={link.href}
@@ -115,7 +116,7 @@ export function Header() {
 
               {/* Order Tracking Quick Link */}
               <Link
-                href="/track-order"
+                href={PATHS.trackOrder()}
                 className="hidden md:flex items-center text-xs text-[#44403C] hover:text-[#1C1917] px-2.5 py-1.5 rounded-sm border border-[#E7E2D8] hover:border-[#1C1917] transition-colors"
                 title="Track your order"
               >
@@ -125,7 +126,7 @@ export function Header() {
 
               {/* Wishlist */}
               <Link
-                href="/account/wishlist"
+                href={PATHS.account.wishlist}
                 className="relative p-2 text-[#1C1917] hover:text-[#B8511B] transition-colors focus-ring"
                 aria-label={mounted ? `Wishlist with ${wishlistCount} items` : 'Wishlist'}
               >
@@ -142,9 +143,9 @@ export function Header() {
                 href={
                   session?.user
                     ? session.user.role === 'OWNER' || session.user.role === 'STAFF'
-                      ? '/admin'
-                      : '/account/profile'
-                    : '/account/login'
+                      ? PATHS.admin.dashboard
+                      : PATHS.account.profile
+                    : PATHS.account.login()
                 }
                 className="p-2 text-[#1C1917] hover:text-[#B8511B] transition-colors focus-ring"
                 aria-label={session?.user ? 'Customer account' : 'Sign in'}
@@ -211,14 +212,14 @@ export function Header() {
                 </Link>
               ))}
               <Link
-                href="/track-order"
+                href={PATHS.trackOrder()}
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-sm text-[#5C554C] hover:text-[#262320] py-2"
               >
                 Track Order
               </Link>
               <Link
-                href="/account/wishlist"
+                href={PATHS.account.wishlist}
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-sm text-[#5C554C] hover:text-[#262320] py-2"
               >
@@ -226,7 +227,7 @@ export function Header() {
               </Link>
               {session?.user ? (
                 <Link
-                  href="/account/profile"
+                  href={PATHS.account.profile}
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-sm text-[#5C554C] hover:text-[#262320] py-2"
                 >
@@ -234,7 +235,7 @@ export function Header() {
                 </Link>
               ) : (
                 <Link
-                  href="/account/login"
+                  href={PATHS.account.login()}
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-sm text-[#5C554C] hover:text-[#262320] py-2"
                 >
@@ -252,4 +253,3 @@ export function Header() {
     </>
   );
 }
-

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/money';
+import { PATHS } from '@/lib/paths';
 import { ArrowLeft, Printer, Truck, DollarSign, Ban, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface OrderItemRecord {
@@ -97,7 +98,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
     setError(null);
 
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(PATHS.api.admin.order(order.id), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,7 +126,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(PATHS.api.admin.order(order.id), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'mark_cod_paid' }),
@@ -147,7 +148,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(PATHS.api.admin.order(order.id), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -171,7 +172,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
   const handleSaveNotes = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(PATHS.api.admin.order(order.id), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'save_notes', internalNotes }),
@@ -192,7 +193,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DACD] pb-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/admin/orders"
+            href={PATHS.admin.orders}
             className="p-1.5 text-[#8A8175] hover:text-[#262320] border border-[#E2DACD] rounded-sm"
           >
             <ArrowLeft className="w-4 h-4" />

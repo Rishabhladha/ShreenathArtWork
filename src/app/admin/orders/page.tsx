@@ -2,10 +2,11 @@ import React from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
-import { Prisma, OrderStatus, PaymentStatus, PaymentMethod } from '@prisma/client';
+import { Prisma, OrderStatus, PaymentStatus } from '@prisma/client';
 import { requireAdminSession } from '@/lib/auth';
 import { formatPrice } from '@/lib/money';
-import { Eye, Download, Search, Filter } from 'lucide-react';
+import { PATHS } from '@/lib/paths';
+import { Search, ShoppingBag, Eye, Clock, CheckCircle2, Truck, PackageCheck, AlertCircle } from 'lucide-react';
 
 interface OrdersPageProps {
   searchParams: Promise<{
@@ -19,7 +20,7 @@ interface OrdersPageProps {
 export default async function AdminOrdersPage({ searchParams }: OrdersPageProps) {
   const session = await requireAdminSession();
   if (!session) {
-    redirect('/admin/login');
+    redirect(PATHS.admin.login());
   }
 
   const { status, paymentStatus, paymentMethod, search } = await searchParams;
@@ -32,7 +33,7 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
     where.paymentStatus = paymentStatus as PaymentStatus;
   }
   if (paymentMethod) {
-    where.paymentMethod = paymentMethod as PaymentMethod;
+    where.paymentMethod = paymentMethod as Prisma.EnumPaymentMethodFilter['equals'];
   }
   if (search) {
     where.OR = [
@@ -45,8 +46,10 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
 
   const orders = await prisma.order.findMany({
     where,
+    include: {
+      items: true,
+    },
     orderBy: { createdAt: 'desc' },
-    include: { items: true, payments: true },
   });
 
   return (
@@ -57,95 +60,75 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
             Orders & Shipments ({orders.length})
           </h1>
           <p className="text-xs text-[#5C554C] mt-0.5">
-            Manage customer purchases, wooden crate courier dispatch, and payment status.
+            Process payments, manage courier waybills, and update temple art shipments.
           </p>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm">
-        <form method="GET" action="/admin/orders" className="flex flex-wrap items-center gap-3 text-xs">
-          <input
-            type="text"
-            name="search"
-            defaultValue={search || ''}
-            placeholder="Search by order number, name, phone..."
-            className="px-3 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320] w-64"
-          />
-
-          <select
-            name="status"
-            defaultValue={status || ''}
-            className="px-3 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-          >
-            <option value="">All Fulfillment Statuses</option>
-            <option value="PLACED">Placed</option>
-            <option value="CONFIRMED">Confirmed</option>
-            <option value="PACKED">Packed</option>
-            <option value="SHIPPED">Shipped</option>
-            <option value="DELIVERED">Delivered</option>
-            <option value="CANCELLED">Cancelled</option>
-            <option value="RETURNED">Returned</option>
-          </select>
-
-          <select
-            name="paymentStatus"
-            defaultValue={paymentStatus || ''}
-            className="px-3 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-          >
-            <option value="">All Payment Statuses</option>
-            <option value="PAID">Paid</option>
-            <option value="PENDING">Pending</option>
-            <option value="CREATED">Created</option>
-            <option value="FAILED">Failed</option>
-            <option value="CANCELLED">Cancelled</option>
-            <option value="REFUNDED">Refunded</option>
-          </select>
-
-          <select
-            name="paymentMethod"
-            defaultValue={paymentMethod || ''}
-            className="px-3 py-1.5 bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-          >
-            <option value="">All Payment Methods</option>
-            <option value="ONLINE">Online (Razorpay)</option>
-            <option value="COD">Cash on Delivery</option>
-          </select>
-
+      {/* Filter Tabs / Quick Stats */}
+      <div className="bg-[#FAF7F2] p-4 border border-[#E2DACD] rounded-sm flex flex-col sm:flex-row gap-3">
+        <form className="flex-1 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-[#8A8175] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="search"
+              name="search"
+              defaultValue={search || ''}
+              placeholder="Search by order number (e.g. SAW-), customer name or phone..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring"
+            />
+          </div>
           <button type="submit" className="btn-secondary text-xs py-1.5 px-3">
-            Filter
+            Search
           </button>
         </form>
+
+        <div className="flex items-center gap-2 text-xs">
+          {['ALL', 'CONFIRMED', 'PACKED', 'SHIPPED', 'DELIVERED'].map((st) => (
+            <a
+              key={st}
+              href={st === 'ALL' ? PATHS.admin.orders : `?status=${st}`}
+              className={`px-2 py-1 rounded-sm border ${
+                (st === 'ALL' && !status) || status === st
+                  ? 'bg-[#262320] text-white border-[#262320]'
+                  : 'bg-white text-[#5C554C] border-[#E2DACD] hover:bg-[#F4EFE6]'
+              }`}
+            >
+              {st}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Orders Table */}
-      <div className="bg-[#FAF7F2] border border-[#E2DACD] rounded-sm overflow-hidden">
-        <table className="w-full text-xs text-left">
-          <thead className="bg-[#F4EFE6] text-[#262320] border-b border-[#E2DACD]">
-            <tr>
-              <th className="py-2.5 px-3 font-semibold">Order</th>
-              <th className="py-2.5 px-3 font-semibold">Date</th>
-              <th className="py-2.5 px-3 font-semibold">Customer</th>
-              <th className="py-2.5 px-3 font-semibold">Fulfillment</th>
-              <th className="py-2.5 px-3 font-semibold">Payment</th>
-              <th className="py-2.5 px-3 font-semibold text-right">Amount</th>
-              <th className="py-2.5 px-3 font-semibold text-right">Action</th>
+      <div className="bg-white border border-[#E2DACD] rounded-sm overflow-hidden">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="bg-[#FAF7F2] border-b border-[#E2DACD] text-[#5C554C] font-semibold">
+              <th className="py-2.5 px-3">Order Number</th>
+              <th className="py-2.5 px-3">Date</th>
+              <th className="py-2.5 px-3">Customer</th>
+              <th className="py-2.5 px-3">Artworks</th>
+              <th className="py-2.5 px-3">Fulfillment Status</th>
+              <th className="py-2.5 px-3">Payment</th>
+              <th className="py-2.5 px-3 text-right">Total</th>
+              <th className="py-2.5 px-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#ECE5DA]">
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-[#8A8175]">
-                  No orders found.
+                <td colSpan={8} className="py-12 text-center text-[#8A8175]">
+                  No orders found matching the filter criteria.
                 </td>
               </tr>
             ) : (
               orders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-[#FAF6EF]">
-                  <td className="py-2.5 px-3 font-mono font-medium text-[#262320]">
+                <tr key={ord.id} className="hover:bg-[#FAF7F2] transition-colors">
+                  <td className="py-2.5 px-3 font-mono font-semibold text-[#262320]">
                     {ord.orderNumber}
                   </td>
-                  <td className="py-2.5 px-3 text-[#8A8175]">
+                  <td className="py-2.5 px-3 text-[#5C554C]">
                     {new Date(ord.createdAt).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
@@ -157,15 +140,25 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
                     <p className="text-[11px] text-[#8A8175]">{ord.customerPhone}</p>
                   </td>
                   <td className="py-2.5 px-3">
+                    <p className="font-medium text-[#262320]">
+                      {ord.items.length} item{ord.items.length > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-[11px] text-[#8A8175] truncate max-w-xs">
+                      {ord.items.map((i) => i.titleSnapshot).join(', ')}
+                    </p>
+                  </td>
+                  <td className="py-2.5 px-3">
                     <span
-                      className={`px-2 py-0.5 text-[10px] rounded-sm font-semibold border ${
+                      className={`inline-block px-2 py-0.5 text-[10px] uppercase font-mono font-semibold rounded-xs ${
                         ord.status === 'DELIVERED'
-                          ? 'bg-[#EAE2D5] text-[#2A5C38] border-[#D1C6B4]'
-                          : ord.status === 'CANCELLED'
-                          ? 'bg-[#FAF0F0] text-[#8C2B2B] border-[#D9B5B5]'
+                          ? 'bg-[#EBF5EE] text-[#2A5C38]'
                           : ord.status === 'SHIPPED'
-                          ? 'bg-[#FDF4E7] text-[#94601A] border-[#EAD5B8]'
-                          : 'bg-[#FAF7F2] text-[#262320] border-[#E2DACD]'
+                          ? 'bg-[#EBF2F7] text-[#245C78]'
+                          : ord.status === 'CONFIRMED' || ord.status === 'PACKED'
+                          ? 'bg-[#FEF6EE] text-[#C47820]'
+                          : ord.status === 'CANCELLED'
+                          ? 'bg-[#FAF0F0] text-[#8C2B2B]'
+                          : 'bg-[#F4EFE6] text-[#8A8175]'
                       }`}
                     >
                       {ord.status}
@@ -173,9 +166,9 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
                   </td>
                   <td className="py-2.5 px-3">
                     <span
-                      className={`px-2 py-0.5 text-[10px] rounded-sm font-semibold border ${
+                      className={`inline-block px-2 py-0.5 text-[10px] uppercase font-mono font-semibold rounded-xs border ${
                         ord.paymentStatus === 'PAID'
-                          ? 'bg-[#EAE2D5] text-[#2A5C38] border-[#D1C6B4]'
+                          ? 'bg-[#EBF5EE] text-[#2A5C38] border-[#B8D9C0]'
                           : ord.paymentStatus === 'FAILED'
                           ? 'bg-[#FAF0F0] text-[#8C2B2B] border-[#D9B5B5]'
                           : 'bg-[#FAF7F2] text-[#8A8175] border-[#E2DACD]'
@@ -189,7 +182,7 @@ export default async function AdminOrdersPage({ searchParams }: OrdersPageProps)
                   </td>
                   <td className="py-2.5 px-3 text-right">
                     <Link
-                      href={`/admin/orders/${ord.id}`}
+                      href={PATHS.admin.orderDetail(ord.id)}
                       className="btn-secondary text-xs py-1 px-2.5"
                     >
                       Manage

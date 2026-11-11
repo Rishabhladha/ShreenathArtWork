@@ -1,14 +1,15 @@
 import React, { Suspense, cache } from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import prisma from '@/lib/prisma';
 import { logActivityEvent } from '@/lib/events';
 import { ImageGallery } from '@/components/shop/ImageGallery';
 import { VariantSelector } from '@/components/shop/VariantSelector';
 import { ReviewSection } from '@/components/shop/ReviewSection';
 import { ProductCard } from '@/components/shop/ProductCard';
-import { ShieldCheck, Truck, RotateCcw, ChevronRight, Sparkles } from 'lucide-react';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
+import { PATHS, buildProductBreadcrumbs } from '@/lib/paths';
+import { ShieldCheck, Truck, RotateCcw, Sparkles } from 'lucide-react';
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -30,14 +31,16 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const { slug } = await params;
   const product = await getProduct(slug);
 
-  if (!product || product.status !== 'ACTIVE') return {};
+  if (!product) return {};
 
   const minPrice = product.variants[0]?.price ? Math.round(product.variants[0].price / 100) : 0;
   const primaryImg = product.images[0]?.url || '/placeholder-artwork.svg';
 
   return {
-    title: `${product.title} | Authentic Nathdwara Pichwai Art`,
-    description: product.description.slice(0, 160),
+    title: product.seoTitle || `${product.title} | SHREENATH ART WORK`,
+    description:
+      product.seoDescription ||
+      `Authentic devotional painting from Nathdwara: ${product.title}. Hand painted using ${product.medium}. Starting from Rs ${minPrice}.`,
     openGraph: {
       title: product.title,
       description: product.description,
@@ -46,11 +49,11 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
+// Subcomponent for streaming Related Paintings asynchronously
 async function RelatedProductsSection({
   categoryId,
   productId,
   categoryName,
-  categorySlug,
 }: {
   categoryId: string;
   productId: string;
@@ -64,7 +67,6 @@ async function RelatedProductsSection({
       status: 'ACTIVE',
     },
     include: {
-      category: true,
       images: { orderBy: { displayOrder: 'asc' }, take: 1 },
       variants: { orderBy: { price: 'asc' } },
     },
@@ -74,19 +76,10 @@ async function RelatedProductsSection({
   if (relatedProducts.length === 0) return null;
 
   return (
-    <section className="space-y-6 pt-12 border-t border-[#E2DACD]">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-serif text-2xl font-semibold text-[#262320]">
-          Related Paintings in {categoryName}
-        </h2>
-        <Link
-          href={`/catalog?category=${categorySlug}`}
-          className="text-xs text-[#C47820] hover:underline"
-        >
-          View Category
-        </Link>
-      </div>
-
+    <section className="pt-12 border-t border-[#E2DACD] space-y-6">
+      <h2 className="font-serif text-xl sm:text-2xl font-semibold text-[#1C1917]">
+        More from {categoryName}
+      </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {relatedProducts.map((p) => {
           const defaultVar = p.variants.find((v) => v.isDefault) || p.variants[0];
@@ -100,8 +93,8 @@ async function RelatedProductsSection({
               title={p.title}
               slug={p.slug}
               medium={p.medium}
-              categoryName={p.category.name}
-              price={defaultVar ? defaultVar.price : 0}
+              categoryName={categoryName}
+              price={defaultVar?.price ?? 0}
               mrp={defaultVar?.mrp}
               image={pImg}
               stock={totalStock}
@@ -138,17 +131,18 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const product = await getProduct(slug);
 
-  if (!product || product.status !== 'ACTIVE') {
+  if (!product || product.status === 'ARCHIVED') {
     notFound();
   }
 
-  // Telemetry: Log product view
-  await logActivityEvent({
+  // Audit activity trail for high-intent artwork view
+  logActivityEvent({
     eventType: 'PRODUCT_VIEW',
     metadata: {
       productId: product.id,
-      slug: product.slug,
       title: product.title,
+      slug: product.slug,
+      category: product.category?.name,
     },
   });
 
@@ -178,6 +172,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     },
   };
 
+  const breadcrumbs = buildProductBreadcrumbs({
+    productTitle: product.title,
+    categoryName: product.category?.name,
+    categorySlug: product.category?.slug,
+  });
+
   return (
     <>
       <script
@@ -187,24 +187,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12">
         {/* Breadcrumb Navigation */}
-        <nav aria-label="Breadcrumb" className="flex items-center text-xs text-[#8A8175] gap-1.5">
-          <Link href="/" className="hover:text-[#262320]">
-            Home
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <Link href="/catalog" className="hover:text-[#262320]">
-            Catalog
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <Link
-            href={`/catalog?category=${product.category.slug}`}
-            className="hover:text-[#262320]"
-          >
-            {product.category.name}
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-[#262320] truncate max-w-xs">{product.title}</span>
-        </nav>
+        <Breadcrumbs items={breadcrumbs} />
 
         {/* Product Hero: Gallery + Purchasing Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14">

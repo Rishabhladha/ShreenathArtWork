@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Phone, Mail, MapPin, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { PATHS } from '@/lib/paths';
 
 export function Footer() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export function Footer() {
     setErrorMessage('');
 
     try {
-      const res = await fetch('/api/newsletter', {
+      const res = await fetch(PATHS.api.newsletter, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -90,32 +91,32 @@ export function Footer() {
             </h3>
             <ul className="space-y-2 text-xs text-[#A8A29E]">
               <li>
-                <Link href="/catalog?category=pichwai" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.category('pichwai')} className="hover:text-[#FBBF24] transition-colors">
                   Pichwai Art
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?category=shreenathji-portraits" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.category('shreenathji-portraits')} className="hover:text-[#FBBF24] transition-colors">
                   Sanctum Portraits
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?category=festival-and-utsav" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.category('festival-and-utsav')} className="hover:text-[#FBBF24] transition-colors">
                   Festival and Utsav
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?category=miniature-art" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.category('miniature-art')} className="hover:text-[#FBBF24] transition-colors">
                   Miniature Artworks
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?category=large-format" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.category('large-format')} className="hover:text-[#FBBF24] transition-colors">
                   Large Format Works
                 </Link>
               </li>
               <li>
-                <Link href="/custom-order" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.customOrder} className="hover:text-[#FBBF24] transition-colors">
                   Custom Painting Request
                 </Link>
               </li>
@@ -129,32 +130,32 @@ export function Footer() {
             </h3>
             <ul className="space-y-2 text-xs text-[#A8A29E]">
               <li>
-                <Link href="/about" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.info.about} className="hover:text-[#FBBF24] transition-colors">
                   Our Story and Heritage
                 </Link>
               </li>
               <li>
-                <Link href="/track-order" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.trackOrder()} className="hover:text-[#FBBF24] transition-colors">
                   Track Your Order
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.info.faq} className="hover:text-[#FBBF24] transition-colors">
                   Frequently Asked Questions
                 </Link>
               </li>
               <li>
-                <Link href="/shipping-returns" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.info.shippingReturns} className="hover:text-[#FBBF24] transition-colors">
                   Shipping and Safe Packaging
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.info.privacy} className="hover:text-[#FBBF24] transition-colors">
                   Privacy Policy (DPDP Act)
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-[#FBBF24] transition-colors">
+                <Link href={PATHS.info.terms} className="hover:text-[#FBBF24] transition-colors">
                   Terms and Conditions
                 </Link>
               </li>
@@ -212,16 +213,16 @@ export function Footer() {
             Copyright {new Date().getFullYear()} SHREENATH ART WORK. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-[#FBBF24] transition-colors">
+            <Link href={PATHS.info.privacy} className="hover:text-[#FBBF24] transition-colors">
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-[#FBBF24] transition-colors">
+            <Link href={PATHS.info.terms} className="hover:text-[#FBBF24] transition-colors">
               Terms
             </Link>
-            <Link href="/shipping-returns" className="hover:text-[#FBBF24] transition-colors">
+            <Link href={PATHS.info.shippingReturns} className="hover:text-[#FBBF24] transition-colors">
               Shipping
             </Link>
-            <Link href="/contact" className="hover:text-[#FBBF24] transition-colors">
+            <Link href={PATHS.info.contact} className="hover:text-[#FBBF24] transition-colors">
               Contact
             </Link>
           </div>
@@ -230,4 +231,3 @@ export function Footer() {
     </footer>
   );
 }
-
