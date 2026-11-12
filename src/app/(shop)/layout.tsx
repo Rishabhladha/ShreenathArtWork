@@ -3,7 +3,6 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/layout/CartDrawer';
 import { MobileBottomBar } from '@/components/layout/MobileBottomBar';
-import { CookieNotice } from '@/components/common/CookieNotice';
 import { AnnouncementBar } from '@/components/layout/AnnouncementBar';
 import prisma from '@/lib/prisma';
 
@@ -34,7 +33,6 @@ export default async function ShopLayout({
       <Footer />
       <MobileBottomBar />
       <CartDrawer />
-      <CookieNotice />
     </div>
   );
 }
