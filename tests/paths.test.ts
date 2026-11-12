@@ -71,6 +71,7 @@ describe('Centralized Path System (PATHS)', () => {
       expect(PATHS.account.orders).toBe('/account/orders');
       expect(PATHS.account.wishlist).toBe('/account/wishlist');
       expect(PATHS.account.forgotPassword).toBe('/account/forgot-password');
+      expect(PATHS.account.register).toBe('/account/register');
       expect(PATHS.account.login()).toBe('/account/login');
       expect(PATHS.account.login('/checkout')).toBe('/account/login?callbackUrl=%2Fcheckout');
     });

@@ -13,9 +13,11 @@ export function AdminEnquiryManager({
   const [tab, setTab] = useState<'contact' | 'custom'>('custom');
   const [itemsList, setItemsList] = useState({ contact: messages, custom: customOrders });
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleUpdate = async (type: 'contact' | 'custom_order', id: string, newStatus: InquiryStatus) => {
     setSavingId(id);
+    setError(null);
     try {
       const res = await fetch('/api/admin/enquiries', {
         method: 'PUT',
@@ -34,9 +36,12 @@ export function AdminEnquiryManager({
             contact: prev.contact.map((i) => (i.id === id ? { ...i, status: newStatus } : i)),
           }));
         }
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to update enquiry status.');
       }
     } catch {
-      alert('Error updating status');
+      setError('Technical error updating status. Please try again.');
     } finally {
       setSavingId(null);
     }
@@ -44,6 +49,11 @@ export function AdminEnquiryManager({
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-[#FAF0F0] border border-[#D9B5B5] rounded-sm text-xs text-[#8C2B2B]">
+          {error}
+        </div>
+      )}
       <div className="flex border-b border-[#E2DACD] text-xs">
         <button
           type="button"

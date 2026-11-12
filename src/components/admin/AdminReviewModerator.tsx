@@ -17,9 +17,11 @@ interface ReviewItem {
 export function AdminReviewModerator({ initialReviews }: { initialReviews: ReviewItem[] }) {
   const [reviews, setReviews] = useState(initialReviews);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleToggleApproval = async (id: string, isApproved: boolean) => {
     setLoadingId(id);
+    setError(null);
     try {
       const res = await fetch('/api/admin/reviews', {
         method: 'PUT',
@@ -31,9 +33,12 @@ export function AdminReviewModerator({ initialReviews }: { initialReviews: Revie
         setReviews((prev) =>
           prev.map((r) => (r.id === id ? { ...r, isApproved } : r))
         );
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to update review status.');
       }
     } catch {
-      alert('Error updating review');
+      setError('Technical error updating review approval.');
     } finally {
       setLoadingId(null);
     }
@@ -42,15 +47,19 @@ export function AdminReviewModerator({ initialReviews }: { initialReviews: Revie
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to permanently delete this review?')) return;
     setLoadingId(id);
+    setError(null);
     try {
       const res = await fetch(`/api/admin/reviews?id=${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
         setReviews((prev) => prev.filter((r) => r.id !== id));
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to delete review.');
       }
     } catch {
-      alert('Error deleting review');
+      setError('Technical error deleting review.');
     } finally {
       setLoadingId(null);
     }
@@ -66,6 +75,11 @@ export function AdminReviewModerator({ initialReviews }: { initialReviews: Revie
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="p-3 bg-[#FAF0F0] border border-[#D9B5B5] rounded-sm text-xs text-[#8C2B2B]">
+          {error}
+        </div>
+      )}
       {reviews.map((r) => (
         <div
           key={r.id}

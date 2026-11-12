@@ -82,6 +82,7 @@ export const PATHS = {
     orders: '/account/orders',
     wishlist: '/account/wishlist',
     forgotPassword: '/account/forgot-password',
+    register: '/account/register',
   },
 
   // Information & Legal

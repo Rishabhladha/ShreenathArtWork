@@ -124,6 +124,8 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
   const handleMarkCodPaid = async () => {
     if (!confirm('Confirm marking this Cash on Delivery order as PAID?')) return;
     setLoading(true);
+    setMessage(null);
+    setError(null);
 
     try {
       const res = await fetch(PATHS.api.admin.order(order.id), {
@@ -137,7 +139,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
       setMessage('Order marked as paid on delivery.');
       router.refresh();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error');
+      setError(err instanceof Error ? err.message : 'Failed to update payment status.');
     } finally {
       setLoading(false);
     }
@@ -146,6 +148,8 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
   const handleRefund = async () => {
     if (!confirm(`Confirm issuing refund of ${formatPrice(refundAmount)}?`)) return;
     setLoading(true);
+    setMessage(null);
+    setError(null);
 
     try {
       const res = await fetch(PATHS.api.admin.order(order.id), {
@@ -163,7 +167,7 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
       setMessage('Simulated refund issued successfully.');
       router.refresh();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error');
+      setError(err instanceof Error ? err.message : 'Failed to issue refund.');
     } finally {
       setLoading(false);
     }
@@ -171,6 +175,8 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
 
   const handleSaveNotes = async () => {
     setLoading(true);
+    setMessage(null);
+    setError(null);
     try {
       const res = await fetch(PATHS.api.admin.order(order.id), {
         method: 'PUT',
@@ -179,9 +185,12 @@ export function AdminOrderDetailManager({ order }: { order: OrderDetail }) {
       });
       if (res.ok) {
         setMessage('Internal notes saved.');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Failed to save notes.');
       }
     } catch {
-      // Ignore
+      setError('Technical error saving internal notes.');
     } finally {
       setLoading(false);
     }

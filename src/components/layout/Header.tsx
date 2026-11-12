@@ -138,6 +138,17 @@ export function Header() {
                 )}
               </Link>
 
+              {/* Admin Backoffice Quick Link for Authenticated Staff */}
+              {session?.user && (session.user.role === 'OWNER' || session.user.role === 'STAFF') && (
+                <Link
+                  href={PATHS.admin.dashboard}
+                  className="hidden md:inline-flex items-center gap-1 text-[11px] font-semibold bg-[#262320] text-[#FAF6EF] hover:bg-[#A85A32] px-2.5 py-1.5 rounded-sm border border-[#262320] transition-colors"
+                  title="Open Gallery Backoffice"
+                >
+                  <span>Admin</span>
+                </Link>
+              )}
+
               {/* Account */}
               <Link
                 href={
@@ -226,13 +237,24 @@ export function Header() {
                 Wishlist ({wishlistCount})
               </Link>
               {session?.user ? (
-                <Link
-                  href={PATHS.account.profile}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-sm text-[#5C554C] hover:text-[#262320] py-2"
-                >
-                  My Account ({session.user.name || session.user.email})
-                </Link>
+                <>
+                  <Link
+                    href={PATHS.account.profile}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-sm text-[#5C554C] hover:text-[#262320] py-2"
+                  >
+                    My Account ({session.user.name || session.user.email})
+                  </Link>
+                  {(session.user.role === 'OWNER' || session.user.role === 'STAFF') && (
+                    <Link
+                      href={PATHS.admin.dashboard}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-sm font-semibold text-[#A85A32] py-2 border-t border-[#ECE5DA]"
+                    >
+                      Gallery Backoffice Admin Panel →
+                    </Link>
+                  )}
+                </>
               ) : (
                 <Link
                   href={PATHS.account.login()}

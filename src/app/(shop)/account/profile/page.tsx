@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { getServerAuthSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { formatPrice } from '@/lib/money';
-import { Package, Heart, LogOut, MapPin, User, ChevronRight } from 'lucide-react';
+import { PATHS } from '@/lib/paths';
+import { Package, Heart, LogOut, MapPin, User, ChevronRight, Shield } from 'lucide-react';
 import { SignOutButton } from '@/components/layout/SignOutButton';
 
 export default async function CustomerProfilePage() {
   const session = await getServerAuthSession();
 
   if (!session || !session.user) {
-    redirect('/account/login?callbackUrl=/account/profile');
+    redirect(PATHS.account.login(PATHS.account.profile));
   }
 
   const [user, ordersCount, recentOrders] = await Promise.all([
@@ -47,6 +48,31 @@ export default async function CustomerProfilePage() {
           <SignOutButton />
         </div>
       </div>
+
+      {/* Administrator Portal Gateway for Staff & Owners */}
+      {(session.user.role === 'OWNER' || session.user.role === 'STAFF') && (
+        <div className="p-5 bg-[#262320] text-[#FAF6EF] rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm border border-[#3E3832]">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase tracking-widest text-[#DEC99C] font-semibold flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-[#DEC99C]" />
+              <span>Authorized Administrator ({session.user.role})</span>
+            </span>
+            <p className="font-serif text-lg font-bold text-white">
+              Gallery Management Backoffice
+            </p>
+            <p className="text-xs text-[#DEC99C]/80">
+              You have privileged access to manage artworks, inventory, customer orders, and shop settings.
+            </p>
+          </div>
+          <Link
+            href={PATHS.admin.dashboard}
+            className="btn-primary bg-[#A85A32] hover:bg-[#8F4824] text-white text-xs py-2.5 px-4 flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-center shadow-xs"
+          >
+            <span>Open Admin Dashboard</span>
+            <ChevronRight className="w-4 h-4 text-[#DEC99C]" />
+          </Link>
+        </div>
+      )}
 
       {/* Quick Navigation Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

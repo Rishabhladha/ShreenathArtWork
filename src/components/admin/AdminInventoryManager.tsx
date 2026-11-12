@@ -24,8 +24,10 @@ export function AdminInventoryManager({ initialVariants }: { initialVariants: In
   const [editStock, setEditStock] = useState<number>(0);
   const [editReason, setEditReason] = useState<string>('Workshop stock adjustment');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const startEdit = (v: InventoryVariant) => {
+    setError(null);
     setEditingId(v.id);
     setEditStock(v.stock);
     setEditReason('Physical count adjustment');
@@ -33,6 +35,7 @@ export function AdminInventoryManager({ initialVariants }: { initialVariants: In
 
   const handleSave = async (id: string) => {
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch('/api/admin/inventory', {
         method: 'POST',
@@ -51,17 +54,23 @@ export function AdminInventoryManager({ initialVariants }: { initialVariants: In
         );
         setEditingId(null);
       } else {
-        alert(data.error || 'Failed to update stock');
+        setError(data.error || 'Failed to update stock');
       }
     } catch {
-      alert('Error updating stock');
+      setError('Technical error updating stock count');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="bg-[#FAF7F2] border border-[#E2DACD] rounded-sm overflow-hidden">
+    <div className="space-y-3">
+      {error && (
+        <div className="p-3 bg-[#FAF0F0] border border-[#D9B5B5] rounded-sm text-xs text-[#8C2B2B]">
+          {error}
+        </div>
+      )}
+      <div className="bg-[#FAF7F2] border border-[#E2DACD] rounded-sm overflow-hidden">
       <table className="w-full text-xs text-left">
         <thead className="bg-[#F4EFE6] text-[#262320] border-b border-[#E2DACD]">
           <tr>
@@ -159,6 +168,7 @@ export function AdminInventoryManager({ initialVariants }: { initialVariants: In
         </tbody>
       </table>
     </div>
+  </div>
   );
 }
 

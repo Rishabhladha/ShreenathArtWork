@@ -49,12 +49,13 @@ export function AdminCouponManager({ initialCoupons }: { initialCoupons: CouponI
       );
       router.refresh();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error updating coupon');
+      setError(err instanceof Error ? err.message : 'Error updating coupon');
     }
   };
 
   const handleDelete = async (id: string, code: string) => {
     if (!confirm(`Are you sure you want to delete or deactivate coupon "${code}"?`)) return;
+    setError(null);
 
     try {
       const res = await fetch(`/api/admin/coupons?id=${id}`, {
@@ -66,13 +67,13 @@ export function AdminCouponManager({ initialCoupons }: { initialCoupons: CouponI
         setCoupons((prev) =>
           prev.map((c) => (c.id === id ? { ...c, isActive: false } : c))
         );
-        alert('Coupon had existing redemptions and was deactivated.');
+        setError('Coupon had existing redemptions and was deactivated instead of permanently deleted.');
       } else {
         setCoupons((prev) => prev.filter((c) => c.id !== id));
       }
       router.refresh();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error deleting coupon');
+      setError(err instanceof Error ? err.message : 'Error deleting coupon');
     }
   };
 

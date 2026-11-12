@@ -65,6 +65,7 @@ export function AdminCategoryManager({ initialCategories }: { initialCategories:
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete category "${name}"?`)) return;
+    setError(null);
 
     try {
       const res = await fetch(`/api/admin/categories?id=${id}`, {
@@ -77,7 +78,7 @@ export function AdminCategoryManager({ initialCategories }: { initialCategories:
       setCategories((prev) => prev.filter((c) => c.id !== id));
       router.refresh();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error deleting category');
+      setError(err instanceof Error ? err.message : 'Error deleting category');
     }
   };
 

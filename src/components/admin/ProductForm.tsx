@@ -267,7 +267,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
 
   const removeVariant = (index: number) => {
     if (variants.length <= 1) {
-      alert('A product must have at least one variant.');
+      setError('A painting must have at least one size/framing variant.');
       return;
     }
     setVariants((prev) => {
@@ -366,7 +366,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
       router.push(PATHS.admin.products);
       router.refresh();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Could not delete product');
+      setError(err instanceof Error ? err.message : 'Could not delete product');
     }
   };
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { requireAdminSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { formatActivityMetadata } from '@/components/admin/AuditFormatters';
 import { Activity, Eye, ShoppingBag, CreditCard, CheckCircle2, UserPlus, AlertCircle } from 'lucide-react';
 
 export default async function AdminActivityPage() {
@@ -137,16 +138,12 @@ export default async function AdminActivityPage() {
               >
                 <div className="flex items-start gap-2.5">
                   <Activity className="w-4 h-4 text-[#8A8175] shrink-0 mt-0.5" />
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <span className="font-semibold text-[#262320]">{e.eventType}</span>
                     {e.user && (
                       <span className="text-[#8A8175]"> ({e.user.email})</span>
                     )}
-                    {e.metadata && (
-                      <p className="text-[11px] text-[#5C554C] font-mono mt-0.5">
-                        {e.metadata}
-                      </p>
-                    )}
+                    {formatActivityMetadata(e.eventType, e.metadata)}
                   </div>
                 </div>
                 <span className="text-[10px] text-[#8A8175] shrink-0">
