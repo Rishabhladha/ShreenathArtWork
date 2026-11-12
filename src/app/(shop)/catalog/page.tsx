@@ -138,24 +138,24 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6 sm:space-y-8 bg-[#FAF6EF]">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6 sm:space-y-8">
       {/* Title & Active Filter Summary */}
-      <div className="border-b border-[#E5D7BF] pb-6 space-y-4">
+      <div className="border-b border-[#DEC99C] pb-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
           <div>
-            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#12100E]">
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#231C10]">
               {currentCategory
-                ? categories.find((c) => c.slug === currentCategory)?.name || 'Sacred Paintings'
-                : 'Sacred Devotional Masterpieces'}
+                ? categories.find((c) => c.slug === currentCategory)?.name || 'Artworks Collection'
+                : 'Sacred Paintings Collection'}
             </h1>
-            <p className="text-xs sm:text-sm text-[#82776A] mt-1 font-light">
-              Handcrafted in Nathdwara using natural stone pigments, lapis lazuli, and genuine 24kt gold varak.
+            <p className="text-xs sm:text-sm text-[#7A694F] mt-1">
+              Hand painted and framed in Nathdwara using traditional mineral and stone pigments.
             </p>
           </div>
 
-          <p className="text-xs text-[#82776A]">
-            Catalog Index: <span className="font-serif font-bold text-sm text-[#12100E]">{startItem}-{endItem}</span> of{' '}
-            <span className="font-serif font-bold text-sm text-[#12100E]">{totalCount}</span> artworks
+          <p className="text-xs text-[#7A694F]">
+            Showing <span className="font-semibold text-[#231C10]">{startItem}-{endItem}</span> of{' '}
+            <span className="font-semibold text-[#231C10]">{totalCount}</span> paintings
           </p>
         </div>
 
@@ -164,13 +164,13 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             <Link
               href={createFilterUrl({ category: undefined })}
-              className={`shrink-0 min-h-[44px] px-4 py-2 rounded-xs border text-xs font-medium flex items-center transition-all ${
+              className={`shrink-0 min-h-[44px] px-4 py-2 rounded-xs border text-xs font-medium flex items-center transition-colors ${
                 !currentCategory
-                  ? 'bg-[#12100E] text-[#DFBE72] border-[#C5A059] shadow-sm'
-                  : 'bg-white text-[#524B43] border-[#E5D7BF] hover:border-[#C5A059] hover:text-[#12100E]'
+                  ? 'bg-[#231C10] text-[#FAF7EE] border-[#231C10] shadow-xs'
+                  : 'bg-white text-[#4A3E2D] border-[#DEC99C] hover:border-[#B8860B] hover:text-[#231C10]'
               }`}
             >
-              All Masterpieces
+              All Paintings
             </Link>
             {categories.map((cat) => {
               const isActive = currentCategory === cat.slug;
@@ -178,10 +178,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                 <Link
                   key={cat.id}
                   href={createFilterUrl({ category: cat.slug })}
-                  className={`shrink-0 min-h-[44px] px-4 py-2 rounded-xs border text-xs font-medium flex items-center transition-all ${
+                  className={`shrink-0 min-h-[44px] px-4 py-2 rounded-xs border text-xs font-medium flex items-center transition-colors ${
                     isActive
-                      ? 'bg-[#12100E] text-[#DFBE72] border-[#C5A059] shadow-sm'
-                      : 'bg-white text-[#524B43] border-[#E5D7BF] hover:border-[#C5A059] hover:text-[#12100E]'
+                      ? 'bg-[#231C10] text-[#FAF7EE] border-[#231C10] shadow-xs'
+                      : 'bg-white text-[#4A3E2D] border-[#DEC99C] hover:border-[#B8860B] hover:text-[#231C10]'
                   }`}
                 >
                   {cat.name}
@@ -194,40 +194,40 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         {/* Active Filters Pill Bar */}
         {(currentCategory || currentSearch || inStockOnly) && (
           <div className="flex flex-wrap items-center gap-2 pt-2">
-            <span className="text-xs text-[#82776A] font-medium flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5 text-[#C5A059]" />
+            <span className="text-xs text-[#7A694F] font-medium flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5 text-[#B8860B]" />
               Active Filters:
             </span>
             {currentCategory && (
               <Link
                 href={createFilterUrl({ category: undefined })}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5D7BF] hover:border-[#8B1E1E] rounded-xs text-xs text-[#12100E] transition-colors min-h-[38px] shadow-2xs"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#DEC99C] rounded-xs text-xs text-[#231C10] hover:border-[#B8860B] transition-colors min-h-[38px]"
               >
                 <span>Category: {categories.find((c) => c.slug === currentCategory)?.name}</span>
-                <X className="w-3.5 h-3.5 text-[#8B1E1E]" />
+                <X className="w-3.5 h-3.5 text-[#B8860B]" />
               </Link>
             )}
             {currentSearch && (
               <Link
                 href={createFilterUrl({ search: undefined })}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5D7BF] hover:border-[#8B1E1E] rounded-xs text-xs text-[#12100E] transition-colors min-h-[38px] shadow-2xs"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#DEC99C] rounded-xs text-xs text-[#231C10] hover:border-[#B8860B] transition-colors min-h-[38px]"
               >
                 <span>Search: &ldquo;{currentSearch}&rdquo;</span>
-                <X className="w-3.5 h-3.5 text-[#8B1E1E]" />
+                <X className="w-3.5 h-3.5 text-[#B8860B]" />
               </Link>
             )}
             {inStockOnly && (
               <Link
                 href={createFilterUrl({ inStock: undefined })}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#E5D7BF] hover:border-[#8B1E1E] rounded-xs text-xs text-[#12100E] transition-colors min-h-[38px] shadow-2xs"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-[#DEC99C] rounded-xs text-xs text-[#231C10] hover:border-[#B8860B] transition-colors min-h-[38px]"
               >
                 <span>In Stock in Nathdwara</span>
-                <X className="w-3.5 h-3.5 text-[#8B1E1E]" />
+                <X className="w-3.5 h-3.5 text-[#B8860B]" />
               </Link>
             )}
             <Link
               href={PATHS.catalog()}
-              className="text-xs text-[#8B1E1E] hover:underline ml-2 py-1 min-h-[38px] flex items-center font-medium"
+              className="text-xs text-[#7A694F] hover:text-[#231C10] underline ml-2 py-1 min-h-[38px] flex items-center"
             >
               Reset all
             </Link>
@@ -238,15 +238,15 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left Sidebar Filter Column (Desktop View) */}
         <aside className="hidden lg:block space-y-6">
-          <div className="bg-white border border-[#E5D7BF] rounded-xs p-5 space-y-6 shadow-xs">
-            <div className="flex items-center gap-2 border-b border-[#E5D7BF] pb-3 text-[#12100E]">
-              <SlidersHorizontal className="w-4 h-4 text-[#C5A059]" />
+          <div className="bg-white border border-[#DEC99C] rounded-xs p-5 space-y-6 shadow-xs">
+            <div className="flex items-center gap-2 border-b border-[#DEC99C] pb-3 text-[#231C10]">
+              <SlidersHorizontal className="w-4 h-4 text-[#B8860B]" />
               <h2 className="font-serif text-base font-semibold">Filter Collection</h2>
             </div>
 
             {/* Category Filter List */}
             <div className="space-y-3">
-              <h3 className="text-xs font-semibold text-[#12100E] uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-[#231C10] uppercase tracking-wider">
                 Categories
               </h3>
               <ul className="space-y-1.5 text-xs">
@@ -255,8 +255,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                     href={createFilterUrl({ category: undefined })}
                     className={`block py-2 px-2.5 rounded-xs transition-colors ${
                       !currentCategory
-                        ? 'bg-[#12100E] text-[#DFBE72] font-semibold border border-[#C5A059]/40'
-                        : 'text-[#524B43] hover:text-[#12100E] hover:bg-[#FAF6EF]'
+                        ? 'bg-[#231C10] text-[#FAF7EE] font-medium'
+                        : 'text-[#4A3E2D] hover:text-[#231C10] hover:bg-[#FAF7EE]'
                     }`}
                   >
                     All Collections
@@ -270,8 +270,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                         href={createFilterUrl({ category: cat.slug })}
                         className={`block py-2 px-2.5 rounded-xs transition-colors ${
                           isActive
-                            ? 'bg-[#12100E] text-[#DFBE72] font-semibold border border-[#C5A059]/40'
-                            : 'text-[#524B43] hover:text-[#12100E] hover:bg-[#FAF6EF]'
+                            ? 'bg-[#231C10] text-[#FAF7EE] font-medium'
+                            : 'text-[#4A3E2D] hover:text-[#231C10] hover:bg-[#FAF7EE]'
                         }`}
                       >
                         {cat.name}
@@ -283,36 +283,36 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             </div>
 
             {/* Availability Filter */}
-            <div className="border-t border-[#E5D7BF] pt-5 space-y-3">
-              <h3 className="text-xs font-semibold text-[#12100E] uppercase tracking-wider">
+            <div className="border-t border-[#DEC99C] pt-5 space-y-3">
+              <h3 className="text-xs font-semibold text-[#231C10] uppercase tracking-wider">
                 Availability
               </h3>
               <Link
                 href={createFilterUrl({ inStock: inStockOnly ? undefined : 'true' })}
                 className={`flex items-center gap-2.5 py-2 px-2.5 rounded-xs text-xs transition-colors ${
                   inStockOnly
-                    ? 'bg-[#12100E] text-[#DFBE72] font-semibold border border-[#C5A059]/40'
-                    : 'text-[#524B43] hover:text-[#12100E] hover:bg-[#FAF6EF]'
+                    ? 'bg-[#231C10] text-[#FAF7EE] font-medium'
+                    : 'text-[#4A3E2D] hover:text-[#231C10] hover:bg-[#FAF7EE]'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${inStockOnly ? 'bg-[#DFBE72]' : 'bg-[#1F5E3B]'}`} />
+                <span className={`w-2 h-2 rounded-full ${inStockOnly ? 'bg-[#C59B27]' : 'bg-[#15803D]'}`} />
                 <span>In Stock in Nathdwara only</span>
               </Link>
             </div>
           </div>
 
           {/* Need Custom Painting helper box */}
-          <div className="p-5 bg-[#12100E] text-[#FAF6EF] border border-[#C5A059]/40 rounded-xs space-y-2.5 text-xs shadow-md">
-            <div className="flex items-center gap-1.5 text-[#DFBE72]">
+          <div className="p-5 bg-white border border-[#DEC99C] rounded-xs space-y-2.5 text-xs shadow-xs">
+            <div className="flex items-center gap-1.5 text-[#B8860B]">
               <Sparkles className="w-4 h-4" />
-              <p className="font-serif font-semibold text-sm text-[#FAF6EF]">Custom Sanctum Sizing?</p>
+              <p className="font-serif font-semibold text-sm text-[#231C10]">Custom Sanctum Size?</p>
             </div>
-            <p className="text-[#FAF6EF]/80 leading-relaxed font-light">
-              We create customized paintings according to your pooja altar or wall dimensions with seasoned teak framing.
+            <p className="text-[#4A3E2D] leading-relaxed">
+              We create customized paintings according to your pooja altar or wall dimensions.
             </p>
             <Link
               href={PATHS.customOrder}
-              className="inline-flex items-center text-xs font-semibold text-[#DFBE72] hover:underline pt-1"
+              className="inline-flex items-center text-xs font-semibold text-[#B8860B] hover:text-[#231C10] pt-1"
             >
               <span>Commission Custom Artwork →</span>
             </Link>
@@ -322,10 +322,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         {/* Catalog Main Content */}
         <div className="lg:col-span-3 space-y-6">
           {/* Sorting Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-white border border-[#E5D7BF] rounded-xs text-xs shadow-xs">
-            <div className="flex items-center gap-2 text-[#524B43]">
-              <ArrowUpDown className="w-3.5 h-3.5 text-[#C5A059]" />
-              <span className="font-medium">Sort Masterpieces:</span>
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-white border border-[#DEC99C] rounded-xs text-xs shadow-xs">
+            <div className="flex items-center gap-2 text-[#4A3E2D]">
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#B8860B]" />
+              <span className="font-medium">Sort Paintings:</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {[
@@ -339,10 +339,10 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
                   <Link
                     key={s.key}
                     href={createFilterUrl({ sort: s.key })}
-                    className={`min-h-[44px] px-3.5 py-2 rounded-xs transition-colors flex items-center ${
+                    className={`min-h-[44px] px-3 py-2 rounded-xs transition-colors flex items-center ${
                       isActive
-                        ? 'bg-[#12100E] text-[#DFBE72] font-semibold border border-[#C5A059]/40'
-                        : 'text-[#524B43] hover:text-[#12100E] hover:bg-[#FAF6EF]'
+                        ? 'bg-[#231C10] text-[#FAF7EE] font-semibold'
+                        : 'text-[#4A3E2D] hover:text-[#231C10] hover:bg-[#FAF7EE]'
                     }`}
                   >
                     {s.label}
@@ -352,11 +352,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             </div>
           </div>
 
-          {/* Paintings Grid */}
+          {/* Paintings Grid - Responsive 1 col mobile, 2 col tablet, 3 col desktop */}
           {products.length === 0 ? (
-            <div className="text-center py-20 bg-white border border-[#E5D7BF] rounded-xs space-y-4">
-              <p className="font-serif text-xl text-[#12100E] font-semibold">No artworks found</p>
-              <p className="text-xs text-[#82776A] max-w-sm mx-auto">
+            <div className="text-center py-20 bg-white border border-[#DEC99C] rounded-xs space-y-4">
+              <p className="font-serif text-xl text-[#231C10] font-semibold">No artworks found</p>
+              <p className="text-xs text-[#7A694F] max-w-sm mx-auto">
                 No devotional paintings matched your current filter criteria.
               </p>
               <div className="pt-2">
@@ -392,30 +392,30 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="pt-8 border-t border-[#E5D7BF] flex items-center justify-between text-xs">
+            <div className="pt-8 border-t border-[#DEC99C] flex items-center justify-between text-xs">
               <Link
                 href={currentPage > 1 ? createFilterUrl({ page: String(currentPage - 1) }) : '#'}
                 className={`flex items-center gap-1.5 px-4 py-2.5 border rounded-xs transition-colors min-h-[44px] ${
                   currentPage > 1
-                    ? 'border-[#E5D7BF] bg-white text-[#12100E] hover:bg-[#FAF6EF]'
-                    : 'border-[#E5D7BF]/40 text-[#82776A]/40 pointer-events-none'
+                    ? 'border-[#DEC99C] bg-white text-[#231C10] hover:bg-[#FAF7EE]'
+                    : 'border-[#DEC99C]/40 text-[#7A694F]/40 pointer-events-none'
                 }`}
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
               </Link>
 
-              <span className="text-[#524B43] font-medium">
-                Page <span className="font-semibold text-[#12100E]">{currentPage}</span> of{' '}
-                <span className="font-semibold text-[#12100E]">{totalPages}</span>
+              <span className="text-[#4A3E2D] font-medium">
+                Page <span className="font-semibold text-[#231C10]">{currentPage}</span> of{' '}
+                <span className="font-semibold text-[#231C10]">{totalPages}</span>
               </span>
 
               <Link
                 href={currentPage < totalPages ? createFilterUrl({ page: String(currentPage + 1) }) : '#'}
                 className={`flex items-center gap-1.5 px-4 py-2.5 border rounded-xs transition-colors min-h-[44px] ${
                   currentPage < totalPages
-                    ? 'border-[#E5D7BF] bg-white text-[#12100E] hover:bg-[#FAF6EF]'
-                    : 'border-[#E5D7BF]/40 text-[#82776A]/40 pointer-events-none'
+                    ? 'border-[#DEC99C] bg-white text-[#231C10] hover:bg-[#FAF7EE]'
+                    : 'border-[#DEC99C]/40 text-[#7A694F]/40 pointer-events-none'
                 }`}
               >
                 <span>Next</span>

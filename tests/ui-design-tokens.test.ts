@@ -14,12 +14,12 @@ describe('UI Redesign & Modern Web Guidance Conformance', () => {
     expect(globalsCss.toLowerCase()).not.toContain('to-purple');
   });
 
-  it('defines the authentic Royal Mewar Sanctum palette design tokens', () => {
-    expect(globalsCss).toContain('--color-obsidian: #12100E');
-    expect(globalsCss).toContain('--color-parchment: #FAF6EF');
-    expect(globalsCss).toContain('--color-gold-leaf: #C5A059');
-    expect(globalsCss).toContain('--color-gold-bright: #DFBE72');
-    expect(globalsCss).toContain('--color-sindoor: #8B1E1E');
+  it('defines the authentic Nathdwara sanctum palette design tokens', () => {
+    expect(globalsCss).toContain('--bg-ivory: #FAF7EE');
+    expect(globalsCss).toContain('--border-sand: #DEC99C');
+    expect(globalsCss).toContain('--text-charcoal: #231C10');
+    expect(globalsCss).toContain('--accent-saffron: #B8860B');
+    expect(globalsCss).toContain('--accent-gold: #C59B27');
   });
 
   it('enforces modern text wrapping for typography legibility', () => {
