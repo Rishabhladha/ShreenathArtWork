@@ -9,13 +9,12 @@ import { ReviewSection } from '@/components/shop/ReviewSection';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { buildProductBreadcrumbs } from '@/lib/paths';
-import { ShieldCheck, Truck, RotateCcw, Sparkles } from 'lucide-react';
+import { ShieldCheck, Truck, RotateCcw, Sparkles, Award } from 'lucide-react';
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-// Deduplicate database queries across generateMetadata and ProductDetailPage
 const getProduct = cache(async (slug: string) => {
   return prisma.product.findUnique({
     where: { slug },
@@ -40,7 +39,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     title: product.seoTitle || `${product.title} | SHREENATH ART WORK`,
     description:
       product.seoDescription ||
-      `Authentic devotional painting from Nathdwara: ${product.title}. Hand painted using ${product.medium}. Starting from ₹${minPrice.toLocaleString('en-IN')}.`,
+      `Authentic devotional painting from Nathdwara: ${product.title}. Handcrafted using ${product.medium}. Starting from ₹${minPrice.toLocaleString('en-IN')}.`,
     openGraph: {
       title: product.title,
       description: product.description,
@@ -49,7 +48,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-// Subcomponent for streaming Related Paintings asynchronously
 async function RelatedProductsSection({
   categoryId,
   productId,
@@ -76,10 +74,13 @@ async function RelatedProductsSection({
   if (relatedProducts.length === 0) return null;
 
   return (
-    <section className="pt-12 border-t border-[#DEC99C] space-y-6">
-      <h2 className="font-serif text-xl sm:text-2xl font-semibold text-[#231C10]">
-        More from {categoryName}
-      </h2>
+    <section className="pt-12 border-t border-[#E5D7BF] space-y-6">
+      <div className="flex items-center gap-2">
+        <Sparkles className="w-5 h-5 text-[#C5A059]" />
+        <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[#12100E]">
+          More Masterpieces from {categoryName}
+        </h2>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {relatedProducts.map((p) => {
           const defaultVar = p.variants.find((v) => v.isDefault) || p.variants[0];
@@ -108,18 +109,18 @@ async function RelatedProductsSection({
 
 function RelatedProductsSkeleton() {
   return (
-    <div className="pt-12 border-t border-[#DEC99C] space-y-6">
-      <div className="h-6 w-52 bg-[#DEC99C]/50 rounded-xs animate-pulse" />
+    <div className="pt-12 border-t border-[#E5D7BF] space-y-6">
+      <div className="h-6 w-52 bg-[#E5D7BF]/60 rounded-xs animate-pulse" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="bg-white border border-[#DEC99C] rounded-xs p-4 space-y-3 animate-pulse"
+            className="bg-white border border-[#E5D7BF] rounded-xs p-4 space-y-3 animate-pulse"
           >
-            <div className="aspect-[4/5] bg-[#FAF7EE] rounded-xs w-full" />
-            <div className="h-4 w-20 bg-[#DEC99C]/60 rounded-xs" />
-            <div className="h-5 w-3/4 bg-[#DEC99C] rounded-xs" />
-            <div className="h-4 w-24 bg-[#DEC99C]/80 rounded-xs" />
+            <div className="aspect-[4/5] bg-[#FAF6EF] rounded-xs w-full" />
+            <div className="h-4 w-20 bg-[#E5D7BF]/60 rounded-xs" />
+            <div className="h-5 w-3/4 bg-[#E5D7BF] rounded-xs" />
+            <div className="h-4 w-24 bg-[#E5D7BF]/80 rounded-xs" />
           </div>
         ))}
       </div>
@@ -135,7 +136,6 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  // Audit activity trail for high-intent artwork view
   logActivityEvent({
     eventType: 'PRODUCT_VIEW',
     metadata: {
@@ -149,7 +149,6 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const defaultVariant = product.variants.find((v) => v.isDefault) || product.variants[0];
   const primaryImg = product.images[0]?.url || '/placeholder-artwork.svg';
 
-  // JSON-LD structured data
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -185,7 +184,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10 sm:space-y-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10 sm:space-y-12 bg-[#FAF6EF]">
         {/* Breadcrumb Navigation */}
         <Breadcrumbs items={breadcrumbs} />
 
@@ -199,15 +198,15 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           {/* Right: Artwork Details & Variant Selection */}
           <div className="space-y-6">
             <div>
-              <span className="text-xs uppercase tracking-widest text-[#B8860B] font-sans font-semibold">
+              <span className="text-xs uppercase tracking-[0.25em] text-[#C5A059] font-sans font-semibold">
                 {product.category.name}
               </span>
-              <h1 className="font-serif text-2xl sm:text-4xl font-semibold text-[#231C10] mt-1 leading-snug">
+              <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-[#12100E] mt-1 leading-snug">
                 {product.title}
               </h1>
             </div>
 
-            {/* Variant Selector: size, frame, price, quantity, add to cart + mobile action bar */}
+            {/* Variant Selector */}
             <VariantSelector
               productId={product.id}
               title={product.title}
@@ -226,73 +225,74 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
             />
 
             {/* Specifications Grid */}
-            <div className="border-t border-[#DEC99C] pt-6 space-y-3">
-              <h2 className="font-serif text-sm font-semibold text-[#231C10]">
-                Artwork Specifications
+            <div className="border-t border-[#E5D7BF] pt-6 space-y-3">
+              <h2 className="font-serif text-base font-semibold text-[#12100E] flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#C5A059]" />
+                <span>Museum Artwork Specifications</span>
               </h2>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
                 <div>
-                  <dt className="text-[#7A694F]">Medium and Technique:</dt>
-                  <dd className="font-medium text-[#231C10] mt-0.5">{product.medium}</dd>
+                  <dt className="text-[#82776A]">Medium & Pigments:</dt>
+                  <dd className="font-medium text-[#12100E] mt-0.5">{product.medium}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#7A694F]">Standard Dimensions:</dt>
-                  <dd className="font-medium text-[#231C10] mt-0.5">{product.dimensions}</dd>
+                  <dt className="text-[#82776A]">Standard Dimensions:</dt>
+                  <dd className="font-medium text-[#12100E] mt-0.5">{product.dimensions}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#7A694F]">Origin:</dt>
-                  <dd className="font-medium text-[#231C10] mt-0.5">Nathdwara, Rajasthan</dd>
+                  <dt className="text-[#82776A]">Provenance Origin:</dt>
+                  <dd className="font-medium text-[#12100E] mt-0.5">Nathdwara, Mewar, Rajasthan</dd>
                 </div>
                 <div>
-                  <dt className="text-[#7A694F]">Artists:</dt>
-                  <dd className="font-medium text-[#231C10] mt-0.5">
-                    Traditional Nathdwara Lineage Artists
+                  <dt className="text-[#82776A]">Lineage Artists:</dt>
+                  <dd className="font-medium text-[#12100E] mt-0.5">
+                    Traditional Pushtimarg Haveli Lineage Masters
                   </dd>
                 </div>
               </dl>
             </div>
 
             {/* Artwork Description */}
-            <div className="border-t border-[#DEC99C] pt-6 space-y-3">
-              <h2 className="font-serif text-sm font-semibold text-[#231C10]">
-                Description and Iconography
+            <div className="border-t border-[#E5D7BF] pt-6 space-y-3">
+              <h2 className="font-serif text-base font-semibold text-[#12100E]">
+                Devotional Iconography & Significance
               </h2>
-              <div className="text-xs text-[#4A3E2D] leading-relaxed space-y-2 whitespace-pre-line">
+              <div className="text-xs sm:text-sm text-[#524B43] leading-relaxed space-y-2.5 whitespace-pre-line font-light">
                 {product.description}
               </div>
             </div>
 
             {/* Care Instructions */}
             {product.careInstructions && (
-              <div className="border-t border-[#DEC99C] pt-6 space-y-2">
-                <h3 className="font-serif text-sm font-semibold text-[#231C10] flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#B8860B]" />
-                  <span>Preservation and Care</span>
+              <div className="border-t border-[#E5D7BF] pt-6 space-y-2">
+                <h3 className="font-serif text-sm font-semibold text-[#12100E] flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#C5A059]" />
+                  <span>Preservation & Gold Leaf Care</span>
                 </h3>
-                <p className="text-xs text-[#4A3E2D] leading-relaxed">
+                <p className="text-xs text-[#524B43] leading-relaxed font-light">
                   {product.careInstructions}
                 </p>
               </div>
             )}
 
             {/* Shipping & Return Highlights */}
-            <div className="p-4 bg-white border border-[#DEC99C] rounded-xs space-y-3 text-xs text-[#4A3E2D] shadow-xs">
-              <div className="flex items-start gap-2.5">
-                <Truck className="w-4 h-4 text-[#B8860B] shrink-0 mt-0.5" />
+            <div className="p-5 bg-white border border-[#E5D7BF] rounded-xs space-y-3.5 text-xs text-[#524B43] shadow-xs">
+              <div className="flex items-start gap-3">
+                <Truck className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
                 <span>
-                  Free insured dispatch on orders above ₹5,000. Packed in reinforced wooden boxes.
+                  Free insured dispatch across India on orders above ₹5,000. Packed in reinforced wooden crates.
                 </span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#B8860B] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
                 <span>
-                  Authenticity guarantee from our Nathdwara workshop with every painting.
+                  Authenticity guarantee signed by lineage master artists with 24kt gold leaf certificate.
                 </span>
               </div>
-              <div className="flex items-start gap-2.5">
-                <RotateCcw className="w-4 h-4 text-[#B8860B] shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <RotateCcw className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
                 <span>
-                  Transit damage protection: immediate replacement or refund upon inspection.
+                  Transit protection: immediate replacement or refund guarantee in case of courier inspection damage.
                 </span>
               </div>
             </div>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/lib/money';
 import { trackActivity } from '@/lib/telemetry';
-import { ShoppingBag, Zap, Share2, Check, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Zap, Share2, Check, AlertCircle, Sparkles, Award } from 'lucide-react';
 
 export interface VariantData {
   id: string;
@@ -139,28 +139,28 @@ export function VariantSelector({
 
   return (
     <div className="space-y-6 pt-2">
-      {/* Price & SKU */}
-      <div className="space-y-1.5 p-4 bg-white border border-[#DEC99C] rounded-xs shadow-xs">
+      {/* Price & SKU Plinth */}
+      <div className="space-y-1.5 p-5 bg-white border border-[#E5D7BF] rounded-xs shadow-[0_2px_8px_rgba(18,16,14,0.04)]">
         <div className="flex items-baseline gap-3">
-          <span className="font-serif text-3xl sm:text-4xl font-bold text-[#231C10]">
+          <span className="font-serif text-3xl sm:text-4xl font-bold text-[#12100E]">
             {currentVariant ? formatPrice(currentVariant.price) : 'Unavailable'}
           </span>
           {currentVariant?.mrp && currentVariant.mrp > currentVariant.price && (
-            <span className="text-base text-[#7A694F] line-through">
+            <span className="text-base text-[#82776A] line-through font-serif">
               {formatPrice(currentVariant.mrp)}
             </span>
           )}
         </div>
-        <p className="text-xs text-[#7A694F]">
-          SKU: <span className="font-medium text-[#231C10]">{currentVariant?.sku || 'N/A'}</span> • Tax and wooden frame transit included
+        <p className="text-xs text-[#82776A] font-light">
+          SKU: <span className="font-mono font-medium text-[#12100E]">{currentVariant?.sku || 'N/A'}</span> • Tax & insured wooden crate transit included
         </p>
       </div>
 
-      {/* Size Option Selector with min 44px touch targets */}
+      {/* Size Option Selector */}
       {sizes.length > 1 && (
         <div className="space-y-2.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[#231C10]">
-            Select Artwork Size
+          <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-[#12100E]">
+            Artwork Dimensions
           </label>
           <div className="flex flex-wrap gap-2.5">
             {sizes.map((size) => {
@@ -172,8 +172,8 @@ export function VariantSelector({
                   onClick={() => handleSelectSize(size)}
                   className={`min-h-[44px] min-w-[56px] px-4 py-2.5 text-xs rounded-xs border transition-all focus-ring ${
                     isSelected
-                      ? 'border-[#231C10] bg-[#231C10] text-white font-semibold shadow-xs'
-                      : 'border-[#DEC99C] bg-white text-[#231C10] hover:border-[#B8860B] hover:bg-[#FAF7EE]'
+                      ? 'border-[#C5A059] bg-[#12100E] text-[#DFBE72] font-semibold shadow-sm'
+                      : 'border-[#E5D7BF] bg-white text-[#12100E] hover:border-[#C5A059] hover:bg-[#FAF6EF]'
                   }`}
                 >
                   {size}
@@ -184,11 +184,11 @@ export function VariantSelector({
         </div>
       )}
 
-      {/* Frame Option Selector with min 44px touch targets */}
+      {/* Frame Option Selector */}
       {frames.length > 1 && (
         <div className="space-y-2.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[#231C10]">
-            Framing Selection
+          <label className="block text-xs font-semibold uppercase tracking-[0.18em] text-[#12100E]">
+            Framing & Mounting
           </label>
           <div className="flex flex-wrap gap-2.5">
             {frames.map((frame) => {
@@ -201,10 +201,10 @@ export function VariantSelector({
                   onClick={() => handleSelectFrame(frame)}
                   className={`min-h-[44px] min-w-[64px] px-4 py-2.5 text-xs rounded-xs border transition-all focus-ring ${
                     isSelected
-                      ? 'border-[#231C10] bg-[#231C10] text-white font-semibold shadow-xs'
+                      ? 'border-[#C5A059] bg-[#12100E] text-[#DFBE72] font-semibold shadow-sm'
                       : isAvailable
-                      ? 'border-[#DEC99C] bg-white text-[#231C10] hover:border-[#B8860B] hover:bg-[#FAF7EE]'
-                      : 'border-[#DEC99C]/50 bg-[#F5EFE0] text-[#7A694F] line-through'
+                      ? 'border-[#E5D7BF] bg-white text-[#12100E] hover:border-[#C5A059] hover:bg-[#FAF6EF]'
+                      : 'border-[#E5D7BF]/50 bg-[#F4EDE0] text-[#82776A] line-through'
                   }`}
                 >
                   {frame}
@@ -218,46 +218,55 @@ export function VariantSelector({
       {/* Stock Availability indicator */}
       <div className="text-xs">
         {!currentVariant ? (
-          <div className="flex items-center gap-2 text-[#B91C1C] p-3 bg-red-50 border border-red-200 rounded-xs">
+          <div className="flex items-center gap-2 text-[#9E2A2B] p-3 bg-red-50/70 border border-red-200 rounded-xs">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>This size and framing combination is not currently available. Please select another variant.</span>
+            <span>This dimension and framing combination is not currently available. Please select another variant.</span>
           </div>
         ) : isOutOfStock ? (
-          <div className="flex items-center gap-2 text-[#A85A32] p-3 bg-[#FAF7EE] border border-[#DEC99C] rounded-xs">
-            <AlertCircle className="w-4 h-4 shrink-0 text-[#B8860B]" />
-            <span>Currently out of stock. Contact our Nathdwara workshop for a custom commissioned order.</span>
+          <div className="flex items-center gap-2 text-[#12100E] p-3 bg-[#F4EDE0] border border-[#C5A059]/40 rounded-xs">
+            <Sparkles className="w-4 h-4 shrink-0 text-[#C5A059]" />
+            <span>Currently out of stock. Contact our Nathdwara haveli for a custom commissioned artwork.</span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-[#15803D] font-medium p-3 bg-emerald-50/60 border border-emerald-200 rounded-xs">
+          <div className="flex items-center gap-2 text-[#1F5E3B] font-medium p-3 bg-emerald-50/60 border border-emerald-200 rounded-xs">
             <Check className="w-4 h-4 shrink-0" />
             <span>
-              In stock at Nathdwara gallery workshop ({currentVariant.stock} available for dispatch)
+              In stock at Nathdwara workshop ({currentVariant.stock} available for immediate packing)
             </span>
           </div>
         )}
       </div>
 
+      {/* Provenance Seal Callout */}
+      <div className="p-3.5 bg-[#12100E] text-[#FAF6EF] border border-[#C5A059]/40 rounded-xs flex items-center gap-3 shadow-xs">
+        <Award className="w-5 h-5 text-[#DFBE72] shrink-0" />
+        <div className="text-xs">
+          <p className="font-serif font-semibold text-[#DFBE72]">Authentic Nathdwara Provenance</p>
+          <p className="text-[#FAF6EF]/75 font-light text-[11px]">Includes signed Certificate of Lineage and 24kt Gold Varak seal.</p>
+        </div>
+      </div>
+
       {/* Quantity & CTA Buttons */}
       <div className="space-y-3 pt-2">
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Quantity Selector with 44px min touch buttons */}
+          {/* Quantity Selector with 48px min touch buttons */}
           {!isOutOfStock && (
-            <div className="flex items-center justify-between sm:justify-start border border-[#DEC99C] bg-white rounded-xs">
+            <div className="flex items-center justify-between sm:justify-start border border-[#E5D7BF] bg-white rounded-xs">
               <button
                 type="button"
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 disabled={quantity <= 1}
-                className="min-h-[48px] min-w-[48px] flex items-center justify-center text-[#4A3E2D] hover:text-[#231C10] disabled:opacity-30 focus-ring"
+                className="min-h-[48px] min-w-[48px] flex items-center justify-center text-[#524B43] hover:text-[#12100E] disabled:opacity-30 focus-ring"
                 aria-label="Decrease quantity"
               >
                 -
               </button>
-              <span className="px-4 text-sm font-semibold text-[#231C10]">{quantity}</span>
+              <span className="px-4 text-sm font-serif font-bold text-[#12100E]">{quantity}</span>
               <button
                 type="button"
                 onClick={() => setQuantity((q) => Math.min(currentVariant.stock, q + 1))}
                 disabled={quantity >= currentVariant.stock}
-                className="min-h-[48px] min-w-[48px] flex items-center justify-center text-[#4A3E2D] hover:text-[#231C10] disabled:opacity-30 focus-ring"
+                className="min-h-[48px] min-w-[48px] flex items-center justify-center text-[#524B43] hover:text-[#12100E] disabled:opacity-30 focus-ring"
                 aria-label="Increase quantity"
               >
                 +
@@ -270,9 +279,9 @@ export function VariantSelector({
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className="flex-1 btn-primary min-h-[48px] py-3 text-sm font-medium flex items-center justify-center gap-2 shadow-sm"
+            className="flex-1 btn-primary min-h-[48px] py-3 text-sm font-medium flex items-center justify-center gap-2 shadow-md"
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-4 h-4 text-[#DFBE72]" />
             <span>{addedAnimation ? 'Added to Cart!' : 'Add to Sanctum Cart'}</span>
           </button>
 
@@ -281,9 +290,9 @@ export function VariantSelector({
             type="button"
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className="flex-1 btn-accent min-h-[48px] py-3 text-sm font-medium flex items-center justify-center gap-2 shadow-sm"
+            className="flex-1 btn-accent min-h-[48px] py-3 text-sm font-medium flex items-center justify-center gap-2 shadow-md"
           >
-            <Zap className="w-4 h-4" />
+            <Zap className="w-4 h-4 text-[#DFBE72]" />
             <span>Buy Now</span>
           </button>
         </div>
@@ -292,12 +301,12 @@ export function VariantSelector({
         <button
           type="button"
           onClick={handleShare}
-          className="w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 text-xs text-[#4A3E2D] hover:text-[#231C10] border border-[#DEC99C] rounded-xs bg-white transition-colors"
+          className="w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 text-xs text-[#524B43] hover:text-[#12100E] border border-[#E5D7BF] rounded-xs bg-white transition-colors"
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-[#15803D]" />
-              <span className="text-[#15803D] font-medium">Artwork link copied to clipboard</span>
+              <Check className="w-4 h-4 text-[#1F5E3B]" />
+              <span className="text-[#1F5E3B] font-medium">Artwork link copied to clipboard</span>
             </>
           ) : (
             <>
@@ -310,11 +319,11 @@ export function VariantSelector({
 
       {/* Sticky Mobile Floating Action Bar on Mobile Viewports (< lg) */}
       <div
-        className="lg:hidden fixed bottom-16 inset-x-0 z-30 bg-[#FAF7EE]/95 backdrop-blur-md border-t border-[#DEC99C] p-3 shadow-[0_-4px_16px_rgba(35,28,16,0.08)] flex items-center justify-between gap-3"
+        className="lg:hidden fixed bottom-16 inset-x-0 z-30 bg-[#12100E]/98 backdrop-blur-md border-t border-[#C5A059]/40 p-3 shadow-[0_-6px_24px_rgba(0,0,0,0.5)] flex items-center justify-between gap-3 text-[#FAF6EF]"
       >
         <div className="min-w-0">
-          <p className="text-[10px] text-[#7A694F] truncate font-medium">{title}</p>
-          <p className="font-serif font-bold text-base text-[#231C10]">
+          <p className="text-[10px] text-[#DFBE72] truncate font-medium uppercase tracking-wider">{title}</p>
+          <p className="font-serif font-bold text-base text-[#FAF6EF]">
             {currentVariant ? formatPrice(currentVariant.price) : 'Unavailable'}
           </p>
         </div>
@@ -323,18 +332,18 @@ export function VariantSelector({
             type="button"
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className="btn-primary min-h-[44px] px-4 py-2 text-xs font-semibold flex items-center gap-1.5"
+            className="btn-primary min-h-[44px] px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5 bg-[#1A1714] border-[#C5A059]"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
+            <ShoppingBag className="w-3.5 h-3.5 text-[#DFBE72]" />
             <span>{addedAnimation ? 'Added!' : 'Add to Cart'}</span>
           </button>
           <button
             type="button"
             onClick={handleBuyNow}
             disabled={isOutOfStock}
-            className="btn-accent min-h-[44px] px-4 py-2 text-xs font-semibold flex items-center gap-1.5"
+            className="btn-accent min-h-[44px] px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5"
           >
-            <Zap className="w-3.5 h-3.5" />
+            <Zap className="w-3.5 h-3.5 text-[#DFBE72]" />
             <span>Buy Now</span>
           </button>
         </div>

@@ -2,37 +2,46 @@
 
 @layer base {
   :root {
-    --bg-ivory: #FAF7EE;
-    --surface-sand: #F5EFE0;
-    --surface-card: #FFFFFF;
-    --border-sand: #DEC99C;
-    --border-muted: #E8DAC0;
-    --text-charcoal: #231C10;
-    --text-muted: #4A3E2D;
-    --text-subtle: #7A694F;
-    --accent-saffron: #B8860B;
-    --accent-saffron-hover: #9E7205;
-    --accent-gold: #C59B27;
-    --accent-gold-hover: #A57F18;
-    --accent-terracotta: #A85A32;
-    --accent-teal: #1F2E3D;
-    --accent-teal-hover: #141E28;
-    --status-success: #15803D;
+    /* Royal Mewar Sanctum Theme Tokens */
+    --color-obsidian: #12100E;
+    --color-obsidian-surface: #1A1714;
+    --color-obsidian-card: #221E1A;
+    --color-parchment: #FAF6EF;
+    --color-parchment-soft: #F4EDE0;
+    --color-parchment-card: #FFFFFF;
+    
+    --color-gold-leaf: #C5A059;
+    --color-gold-bright: #DFBE72;
+    --color-gold-deep: #A58038;
+    --color-gold-hairline: rgba(197, 160, 89, 0.35);
+
+    --color-sindoor: #8B1E1E;
+    --color-sindoor-hover: #731818;
+    --color-sindoor-subtle: #FDF2F2;
+
+    --color-charcoal-ink: #1A1816;
+    --color-charcoal-muted: #524B43;
+    --color-charcoal-subtle: #82776A;
+
+    --color-border-warm: #E6DCBF;
+    --color-border-subtle: #EFE8D6;
+
+    --status-success: #1F5E3B;
     --status-warning: #B45309;
-    --status-error: #B91C1C;
+    --status-error: #9E2A2B;
   }
 
   body {
-    background-color: var(--bg-ivory);
-    color: var(--text-charcoal);
+    background-color: var(--color-parchment);
+    color: var(--color-charcoal-ink);
     font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-serif), Georgia, serif;
-    letter-spacing: -0.01em;
+    font-family: var(--font-serif), Cormorant Garamond, Georgia, serif;
+    letter-spacing: -0.015em;
     text-wrap: balance;
   }
 
@@ -41,8 +50,8 @@
   }
 
   ::selection {
-    background-color: #F8D98C;
-    color: #231C10;
+    background-color: #E8D5A3;
+    color: #12100E;
   }
 }
 
@@ -54,7 +63,7 @@
   }
 }
 
-/* Mobile Safe Area Inset Helpers */
+/* Safe Area Inset Helpers */
 .pb-safe {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
@@ -77,42 +86,58 @@
   outline: none;
 }
 .focus-ring:focus-visible {
-  outline: 2px solid #C59B27;
+  outline: 2px solid #C5A059;
   outline-offset: 2px;
 }
 
-/* Plain rectangular button utilities with 2px to 4px radius */
+/* Royal Mewar Gold Shimmer Effect */
+.gold-shimmer {
+  background: linear-gradient(135deg, #FAF6EF 0%, #F5ECDA 50%, #FAF6EF 100%);
+}
+
+.gold-foil-text {
+  background: linear-gradient(135deg, #D4AF37 0%, #C5A059 50%, #9E7D32 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Plain rectangular button utilities with royal mewar precision */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-color: #231C10;
-  color: #FFFFFF;
+  background-color: #12100E;
+  color: #FAF6EF;
   font-size: 0.875rem;
   font-weight: 500;
+  letter-spacing: 0.04em;
   min-height: 44px;
-  padding: 0.625rem 1.25rem;
+  padding: 0.65rem 1.4rem;
   border-radius: 2px;
-  border: 1px solid #231C10;
-  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+  border: 1px solid #C5A059;
+  transition: all 180ms ease;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(18, 16, 14, 0.12);
 }
 .btn-primary:hover {
-  background-color: #382D1C;
-  border-color: #C59B27;
+  background-color: #221E1A;
+  border-color: #DFBE72;
+  box-shadow: 0 6px 18px rgba(18, 16, 14, 0.2);
+  transform: translateY(-1px);
 }
 .btn-primary:active {
-  transform: scale(0.985);
+  transform: translateY(0);
 }
 .btn-primary:focus-visible {
-  outline: 2px solid #C59B27;
+  outline: 2px solid #C5A059;
   outline-offset: 2px;
 }
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-accent {
@@ -120,32 +145,37 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-color: #B8860B;
+  background: linear-gradient(135deg, #962222 0%, #8B1E1E 50%, #731818 100%);
   color: #FFFFFF;
   font-size: 0.875rem;
   font-weight: 500;
+  letter-spacing: 0.04em;
   min-height: 44px;
-  padding: 0.625rem 1.25rem;
+  padding: 0.65rem 1.4rem;
   border-radius: 2px;
-  border: 1px solid #B8860B;
-  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+  border: 1px solid #B84747;
+  transition: all 180ms ease;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(139, 30, 30, 0.22);
 }
 .btn-accent:hover {
-  background-color: #9E7205;
-  border-color: #9E7205;
+  background: linear-gradient(135deg, #A82828 0%, #962222 50%, #8B1E1E 100%);
+  border-color: #DFBE72;
+  box-shadow: 0 6px 20px rgba(139, 30, 30, 0.32);
+  transform: translateY(-1px);
 }
 .btn-accent:active {
-  transform: scale(0.985);
+  transform: translateY(0);
 }
 .btn-accent:focus-visible {
-  outline: 2px solid #231C10;
+  outline: 2px solid #DFBE72;
   outline-offset: 2px;
 }
 .btn-accent:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-secondary {
@@ -154,25 +184,30 @@
   justify-content: center;
   gap: 0.5rem;
   background-color: #FFFFFF;
-  color: var(--text-charcoal);
+  color: #12100E;
   font-size: 0.875rem;
   font-weight: 500;
+  letter-spacing: 0.03em;
   min-height: 44px;
-  padding: 0.625rem 1.25rem;
+  padding: 0.65rem 1.4rem;
   border-radius: 2px;
-  border: 1px solid #DEC99C;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease;
+  border: 1px solid #D6C7A8;
+  transition: all 180ms ease;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(18, 16, 14, 0.04);
 }
 .btn-secondary:hover {
-  background-color: #F8F3E6;
-  border-color: #B8860B;
+  background-color: #FAF6EF;
+  border-color: #C5A059;
+  color: #12100E;
+  box-shadow: 0 4px 12px rgba(197, 160, 89, 0.15);
+  transform: translateY(-1px);
 }
 .btn-secondary:active {
-  transform: scale(0.985);
+  transform: translateY(0);
 }
 .btn-secondary:focus-visible {
-  outline: 2px solid #C59B27;
+  outline: 2px solid #C5A059;
   outline-offset: 2px;
 }
 .btn-secondary:disabled {
