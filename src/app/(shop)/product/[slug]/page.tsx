@@ -8,7 +8,7 @@ import { VariantSelector } from '@/components/shop/VariantSelector';
 import { ReviewSection } from '@/components/shop/ReviewSection';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
-import { PATHS, buildProductBreadcrumbs } from '@/lib/paths';
+import { buildProductBreadcrumbs } from '@/lib/paths';
 import { ShieldCheck, Truck, RotateCcw, Sparkles } from 'lucide-react';
 
 interface ProductPageProps {
@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     title: product.seoTitle || `${product.title} | SHREENATH ART WORK`,
     description:
       product.seoDescription ||
-      `Authentic devotional painting from Nathdwara: ${product.title}. Hand painted using ${product.medium}. Starting from Rs ${minPrice}.`,
+      `Authentic devotional painting from Nathdwara: ${product.title}. Hand painted using ${product.medium}. Starting from ₹${minPrice.toLocaleString('en-IN')}.`,
     openGraph: {
       title: product.title,
       description: product.description,
@@ -76,8 +76,8 @@ async function RelatedProductsSection({
   if (relatedProducts.length === 0) return null;
 
   return (
-    <section className="pt-12 border-t border-[#E2DACD] space-y-6">
-      <h2 className="font-serif text-xl sm:text-2xl font-semibold text-[#1C1917]">
+    <section className="pt-12 border-t border-[#DEC99C] space-y-6">
+      <h2 className="font-serif text-xl sm:text-2xl font-semibold text-[#231C10]">
         More from {categoryName}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -108,18 +108,18 @@ async function RelatedProductsSection({
 
 function RelatedProductsSkeleton() {
   return (
-    <div className="pt-12 border-t border-[#E2DACD] space-y-6">
-      <div className="h-6 w-52 bg-[#E8DAC0]/70 rounded-xs animate-pulse" />
+    <div className="pt-12 border-t border-[#DEC99C] space-y-6">
+      <div className="h-6 w-52 bg-[#DEC99C]/50 rounded-xs animate-pulse" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="bg-white border border-[#DEC99C] rounded-sm p-4 space-y-3 animate-pulse"
+            className="bg-white border border-[#DEC99C] rounded-xs p-4 space-y-3 animate-pulse"
           >
-            <div className="aspect-[4/5] bg-[#F5EFE4] rounded-sm w-full" />
-            <div className="h-4 w-20 bg-[#E8DAC0]/60 rounded-xs" />
-            <div className="h-5 w-3/4 bg-[#E8DAC0] rounded-xs" />
-            <div className="h-4 w-24 bg-[#DEC99C] rounded-xs" />
+            <div className="aspect-[4/5] bg-[#FAF7EE] rounded-xs w-full" />
+            <div className="h-4 w-20 bg-[#DEC99C]/60 rounded-xs" />
+            <div className="h-5 w-3/4 bg-[#DEC99C] rounded-xs" />
+            <div className="h-4 w-24 bg-[#DEC99C]/80 rounded-xs" />
           </div>
         ))}
       </div>
@@ -185,12 +185,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10 sm:space-y-12">
         {/* Breadcrumb Navigation */}
         <Breadcrumbs items={breadcrumbs} />
 
         {/* Product Hero: Gallery + Purchasing Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14">
           {/* Left: Image Gallery */}
           <div>
             <ImageGallery title={product.title} images={product.images} />
@@ -199,15 +199,15 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           {/* Right: Artwork Details & Variant Selection */}
           <div className="space-y-6">
             <div>
-              <span className="text-xs uppercase tracking-widest text-[#B8511B] font-sans font-semibold">
+              <span className="text-xs uppercase tracking-widest text-[#B8860B] font-sans font-semibold">
                 {product.category.name}
               </span>
-              <h1 className="font-serif text-2xl sm:text-4xl font-semibold text-[#1C1917] mt-1 leading-snug">
+              <h1 className="font-serif text-2xl sm:text-4xl font-semibold text-[#231C10] mt-1 leading-snug">
                 {product.title}
               </h1>
             </div>
 
-            {/* Variant Selector: size, frame, price, quantity, add to cart */}
+            {/* Variant Selector: size, frame, price, quantity, add to cart + mobile action bar */}
             <VariantSelector
               productId={product.id}
               title={product.title}
@@ -226,26 +226,26 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
             />
 
             {/* Specifications Grid */}
-            <div className="border-t border-[#E2DACD] pt-6 space-y-3">
-              <h2 className="font-serif text-sm font-semibold text-[#262320]">
+            <div className="border-t border-[#DEC99C] pt-6 space-y-3">
+              <h2 className="font-serif text-sm font-semibold text-[#231C10]">
                 Artwork Specifications
               </h2>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
                 <div>
-                  <dt className="text-[#8A8175]">Medium and Technique:</dt>
-                  <dd className="font-medium text-[#262320] mt-0.5">{product.medium}</dd>
+                  <dt className="text-[#7A694F]">Medium and Technique:</dt>
+                  <dd className="font-medium text-[#231C10] mt-0.5">{product.medium}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#8A8175]">Standard Dimensions:</dt>
-                  <dd className="font-medium text-[#262320] mt-0.5">{product.dimensions}</dd>
+                  <dt className="text-[#7A694F]">Standard Dimensions:</dt>
+                  <dd className="font-medium text-[#231C10] mt-0.5">{product.dimensions}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#8A8175]">Origin:</dt>
-                  <dd className="font-medium text-[#262320] mt-0.5">Nathdwara, Rajasthan</dd>
+                  <dt className="text-[#7A694F]">Origin:</dt>
+                  <dd className="font-medium text-[#231C10] mt-0.5">Nathdwara, Rajasthan</dd>
                 </div>
                 <div>
-                  <dt className="text-[#8A8175]">Artists:</dt>
-                  <dd className="font-medium text-[#262320] mt-0.5">
+                  <dt className="text-[#7A694F]">Artists:</dt>
+                  <dd className="font-medium text-[#231C10] mt-0.5">
                     Traditional Nathdwara Lineage Artists
                   </dd>
                 </div>
@@ -253,44 +253,44 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
             </div>
 
             {/* Artwork Description */}
-            <div className="border-t border-[#E2DACD] pt-6 space-y-3">
-              <h2 className="font-serif text-sm font-semibold text-[#262320]">
+            <div className="border-t border-[#DEC99C] pt-6 space-y-3">
+              <h2 className="font-serif text-sm font-semibold text-[#231C10]">
                 Description and Iconography
               </h2>
-              <div className="text-xs text-[#5C554C] leading-relaxed space-y-2 whitespace-pre-line">
+              <div className="text-xs text-[#4A3E2D] leading-relaxed space-y-2 whitespace-pre-line">
                 {product.description}
               </div>
             </div>
 
             {/* Care Instructions */}
             {product.careInstructions && (
-              <div className="border-t border-[#E2DACD] pt-6 space-y-2">
-                <h3 className="font-serif text-sm font-semibold text-[#262320] flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#C47820]" />
+              <div className="border-t border-[#DEC99C] pt-6 space-y-2">
+                <h3 className="font-serif text-sm font-semibold text-[#231C10] flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#B8860B]" />
                   <span>Preservation and Care</span>
                 </h3>
-                <p className="text-xs text-[#5C554C] leading-relaxed">
+                <p className="text-xs text-[#4A3E2D] leading-relaxed">
                   {product.careInstructions}
                 </p>
               </div>
             )}
 
             {/* Shipping & Return Highlights */}
-            <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-3 text-xs text-[#5C554C]">
+            <div className="p-4 bg-white border border-[#DEC99C] rounded-xs space-y-3 text-xs text-[#4A3E2D] shadow-xs">
               <div className="flex items-start gap-2.5">
-                <Truck className="w-4 h-4 text-[#8A8175] shrink-0 mt-0.5" />
+                <Truck className="w-4 h-4 text-[#B8860B] shrink-0 mt-0.5" />
                 <span>
-                  Free insured dispatch on orders above Rs 5,000. Packed in reinforced wooden boxes.
+                  Free insured dispatch on orders above ₹5,000. Packed in reinforced wooden boxes.
                 </span>
               </div>
               <div className="flex items-start gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#8A8175] shrink-0 mt-0.5" />
+                <ShieldCheck className="w-4 h-4 text-[#B8860B] shrink-0 mt-0.5" />
                 <span>
                   Authenticity guarantee from our Nathdwara workshop with every painting.
                 </span>
               </div>
               <div className="flex items-start gap-2.5">
-                <RotateCcw className="w-4 h-4 text-[#8A8175] shrink-0 mt-0.5" />
+                <RotateCcw className="w-4 h-4 text-[#B8860B] shrink-0 mt-0.5" />
                 <span>
                   Transit damage protection: immediate replacement or refund upon inspection.
                 </span>

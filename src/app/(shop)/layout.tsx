@@ -2,6 +2,7 @@ import React from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/layout/CartDrawer';
+import { MobileBottomBar } from '@/components/layout/MobileBottomBar';
 import { CookieNotice } from '@/components/common/CookieNotice';
 import { AnnouncementBar } from '@/components/layout/AnnouncementBar';
 import prisma from '@/lib/prisma';
@@ -27,10 +28,11 @@ export default async function ShopLayout({
         active={settings?.announcementBarActive}
       />
       <Header />
-      <main id="main-content" className="flex-1">
+      <main id="main-content" className="flex-1 pb-20 lg:pb-0">
         {children}
       </main>
       <Footer />
+      <MobileBottomBar />
       <CartDrawer />
       <CookieNotice />
     </div>

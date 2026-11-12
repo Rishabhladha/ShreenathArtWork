@@ -14,6 +14,7 @@
     --accent-saffron-hover: #9E7205;
     --accent-gold: #C59B27;
     --accent-gold-hover: #A57F18;
+    --accent-terracotta: #A85A32;
     --accent-teal: #1F2E3D;
     --accent-teal-hover: #141E28;
     --status-success: #15803D;
@@ -24,7 +25,7 @@
   body {
     background-color: var(--bg-ivory);
     color: var(--text-charcoal);
-    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -32,12 +33,43 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-serif), Georgia, serif;
     letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  p, li {
+    text-wrap: pretty;
   }
 
   ::selection {
     background-color: #F8D98C;
     color: #231C10;
   }
+}
+
+/* Touch and Pointer Ergonomics */
+@media (pointer: coarse) {
+  .touch-min {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile Safe Area Inset Helpers */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide scrollbar for mobile horizontal category pill rails */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Accessible focus ring style */
@@ -59,15 +91,19 @@
   color: #FFFFFF;
   font-size: 0.875rem;
   font-weight: 500;
+  min-height: 44px;
   padding: 0.625rem 1.25rem;
   border-radius: 2px;
   border: 1px solid #231C10;
-  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
   cursor: pointer;
 }
 .btn-primary:hover {
   background-color: #382D1C;
   border-color: #C59B27;
+}
+.btn-primary:active {
+  transform: scale(0.985);
 }
 .btn-primary:focus-visible {
   outline: 2px solid #C59B27;
@@ -76,6 +112,7 @@
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-accent {
@@ -87,15 +124,19 @@
   color: #FFFFFF;
   font-size: 0.875rem;
   font-weight: 500;
+  min-height: 44px;
   padding: 0.625rem 1.25rem;
   border-radius: 2px;
   border: 1px solid #B8860B;
-  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
   cursor: pointer;
 }
 .btn-accent:hover {
   background-color: #9E7205;
   border-color: #9E7205;
+}
+.btn-accent:active {
+  transform: scale(0.985);
 }
 .btn-accent:focus-visible {
   outline: 2px solid #231C10;
@@ -104,6 +145,7 @@
 .btn-accent:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
@@ -115,15 +157,19 @@
   color: var(--text-charcoal);
   font-size: 0.875rem;
   font-weight: 500;
+  min-height: 44px;
   padding: 0.625rem 1.25rem;
   border-radius: 2px;
   border: 1px solid #DEC99C;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease;
   cursor: pointer;
 }
 .btn-secondary:hover {
   background-color: #F8F3E6;
   border-color: #B8860B;
+}
+.btn-secondary:active {
+  transform: scale(0.985);
 }
 .btn-secondary:focus-visible {
   outline: 2px solid #C59B27;
@@ -132,6 +178,7 @@
 .btn-secondary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 @keyframes shimmer {
