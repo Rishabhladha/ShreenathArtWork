@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { requireAdminSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { formatPrice } from '@/lib/money';
+import { PATHS } from '@/lib/paths';
 import {
   TrendingUp,
   ShoppingBag,
@@ -12,12 +13,19 @@ import {
   Clock,
   ArrowRight,
   CreditCard,
+  Plus,
+  Warehouse,
+  MailQuestion,
+  CheckCircle2,
+  Calendar,
+  Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
   const session = await requireAdminSession();
   if (!session) {
-    redirect('/admin/login');
+    redirect(PATHS.admin.login());
   }
 
   const now = new Date();
@@ -38,6 +46,7 @@ export default async function AdminDashboardPage() {
     totalCustomers,
     recentOrders,
     inquiriesCount,
+    totalProducts,
   ] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { status: { in: ['PLACED', 'CONFIRMED'] } } }),
@@ -71,6 +80,7 @@ export default async function AdminDashboardPage() {
       include: { items: true },
     }),
     prisma.contactMessage.count({ where: { status: 'NEW' } }),
+    prisma.product.count(),
   ]);
 
   const revenueToday = revenueTodayAggr._sum.total || 0;
@@ -78,209 +88,336 @@ export default async function AdminDashboardPage() {
   const revenue30Days = revenue30DaysAggr._sum.total || 0;
   const revenueAllTime = revenueAllTimeAggr._sum.total || 0;
 
+  const getOrderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'DELIVERED':
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+      case 'SHIPPED':
+        return 'bg-blue-50 text-blue-800 border-blue-200';
+      case 'CONFIRMED':
+      case 'PROCESSING':
+        return 'bg-amber-50 text-amber-800 border-amber-200';
+      case 'CANCELLED':
+        return 'bg-rose-50 text-rose-800 border-rose-200';
+      default:
+        return 'bg-stone-100 text-stone-800 border-stone-200';
+    }
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'REFUNDED':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'FAILED':
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+      default:
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DACD] pb-4">
+    <div className="space-y-8 max-w-7xl">
+      {/* Title & Quick Actions Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2DACD] pb-5">
         <div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#262320]">
-            Gallery Management Overview
-          </h1>
-          <p className="text-xs text-[#5C554C] mt-0.5">
-            Real-time sales, order fulfillment, and workshop inventory metrics.
+          <div className="flex items-center gap-2">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#262320]">
+              Gallery Management
+            </h1>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#262320] text-[#DEC99C]">
+              LIVE
+            </span>
+          </div>
+          <p className="text-xs text-[#5C554C] mt-1">
+            Real-time artwork commerce, workshop orders, inventory levels, and patron inquiries.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/admin/products/new" className="btn-primary text-xs py-2 px-3">
-            Add New Painting
+
+        {/* Quick Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={PATHS.admin.productNew}
+            className="btn-primary text-xs py-2 px-3 flex items-center gap-1.5 shadow-2xs"
+          >
+            <Plus className="w-3.5 h-3.5 text-[#DEC99C]" />
+            <span>Add New Painting</span>
+          </Link>
+          <Link
+            href={PATHS.admin.orders}
+            className="btn-secondary text-xs py-2 px-3 flex items-center gap-1.5"
+          >
+            <ShoppingBag className="w-3.5 h-3.5 text-[#8A8175]" />
+            <span>Manage Orders</span>
           </Link>
         </div>
       </div>
 
-      {/* Revenue Metric Cards */}
+      {/* Revenue KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-1">
-          <span className="text-[11px] text-[#8A8175] uppercase tracking-wider font-sans font-medium">
-            Revenue Today
-          </span>
+        {/* Today */}
+        <div className="p-5 bg-white border border-[#E2DACD] rounded-sm space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between text-[#8A8175]">
+            <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">
+              Today&apos;s Revenue
+            </span>
+            <div className="w-7 h-7 rounded-sm bg-[#FAF7F2] border border-[#E2DACD] flex items-center justify-center text-[#262320]">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+          </div>
           <p className="font-serif text-2xl font-bold text-[#262320]">
             {formatPrice(revenueToday)}
           </p>
-          <p className="text-[10px] text-[#5C554C]">Paid transactions</p>
+          <p className="text-[10px] text-[#5C554C] flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+            <span>Paid orders since midnight</span>
+          </p>
         </div>
 
-        <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-1">
-          <span className="text-[11px] text-[#8A8175] uppercase tracking-wider font-sans font-medium">
-            Revenue (7 Days)
-          </span>
+        {/* 7 Days */}
+        <div className="p-5 bg-white border border-[#E2DACD] rounded-sm space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between text-[#8A8175]">
+            <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">
+              Past 7 Days
+            </span>
+            <div className="w-7 h-7 rounded-sm bg-[#FAF7F2] border border-[#E2DACD] flex items-center justify-center text-[#262320]">
+              <Calendar className="w-3.5 h-3.5" />
+            </div>
+          </div>
           <p className="font-serif text-2xl font-bold text-[#262320]">
             {formatPrice(revenue7Days)}
           </p>
-          <p className="text-[10px] text-[#5C554C]">Past 7 days</p>
+          <p className="text-[10px] text-[#5C554C]">Trailing 7-day sales performance</p>
         </div>
 
-        <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-1">
-          <span className="text-[11px] text-[#8A8175] uppercase tracking-wider font-sans font-medium">
-            Revenue (30 Days)
-          </span>
+        {/* 30 Days */}
+        <div className="p-5 bg-white border border-[#E2DACD] rounded-sm space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between text-[#8A8175]">
+            <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">
+              Past 30 Days
+            </span>
+            <div className="w-7 h-7 rounded-sm bg-[#FAF7F2] border border-[#E2DACD] flex items-center justify-center text-[#262320]">
+              <TrendingUp className="w-3.5 h-3.5 text-[#A85A32]" />
+            </div>
+          </div>
           <p className="font-serif text-2xl font-bold text-[#262320]">
             {formatPrice(revenue30Days)}
           </p>
-          <p className="text-[10px] text-[#5C554C]">Past 30 days</p>
+          <p className="text-[10px] text-[#5C554C]">Monthly gross volume</p>
         </div>
 
-        <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-1">
-          <span className="text-[11px] text-[#8A8175] uppercase tracking-wider font-sans font-medium">
-            All Time Revenue
-          </span>
-          <p className="font-serif text-2xl font-bold text-[#262320]">
+        {/* All-time */}
+        <div className="p-5 bg-[#262320] text-[#FAF6EF] border border-[#3D3934] rounded-sm space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-[#DEC99C]">
+            <span className="text-[11px] uppercase tracking-wider font-sans font-semibold">
+              All-Time Revenue
+            </span>
+            <div className="w-7 h-7 rounded-sm bg-[#3D3934] flex items-center justify-center text-[#DEC99C]">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="font-serif text-2xl font-bold text-white">
             {formatPrice(revenueAllTime)}
           </p>
-          <p className="text-[10px] text-[#5C554C]">Total collected</p>
+          <p className="text-[10px] text-[#C4B7A6]">Net collected through gateway & COD</p>
         </div>
       </div>
 
-      {/* Order Status Counters */}
+      {/* Operational Status Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm flex items-center justify-between">
-          <div>
+        <Link
+          href={PATHS.admin.orders}
+          className="p-4 bg-white border border-[#E2DACD] rounded-sm hover:border-[#262320] transition-colors shadow-2xs group"
+        >
+          <div className="flex items-center justify-between">
             <span className="text-xs text-[#5C554C]">Total Orders</span>
-            <p className="font-serif text-xl font-bold text-[#262320]">{totalOrders}</p>
+            <ShoppingBag className="w-4 h-4 text-[#8A8175] group-hover:text-[#262320]" />
           </div>
-          <ShoppingBag className="w-5 h-5 text-[#8A8175]" />
-        </div>
+          <p className="font-serif text-2xl font-bold text-[#262320] mt-1">{totalOrders}</p>
+        </Link>
 
-        <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm flex items-center justify-between">
-          <div>
-            <span className="text-xs text-[#5C554C]">Fulfillment Pending</span>
-            <p className="font-serif text-xl font-bold text-[#C47820]">
-              {pendingOrdersCount}
-            </p>
+        <Link
+          href={`${PATHS.admin.orders}?status=PLACED`}
+          className="p-4 bg-white border border-[#E2DACD] rounded-sm hover:border-[#A85A32] transition-colors shadow-2xs group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#5C554C]">Fulfillment Queue</span>
+            <Clock className="w-4 h-4 text-[#A85A32]" />
           </div>
-          <Clock className="w-5 h-5 text-[#C47820]" />
-        </div>
+          <div className="flex items-baseline gap-1.5 mt-1">
+            <p className="font-serif text-2xl font-bold text-[#A85A32]">{pendingOrdersCount}</p>
+            <span className="text-[10px] text-[#8A8175]">pending</span>
+          </div>
+        </Link>
 
-        <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm flex items-center justify-between">
-          <div>
-            <span className="text-xs text-[#5C554C]">Paid vs Unpaid</span>
-            <p className="font-serif text-xl font-bold text-[#262320]">
-              {paidOrders} / {unpaidOrdersCount}
-            </p>
+        <Link
+          href={PATHS.admin.payments}
+          className="p-4 bg-white border border-[#E2DACD] rounded-sm hover:border-[#262320] transition-colors shadow-2xs group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#5C554C]">Settled / Unpaid</span>
+            <CreditCard className="w-4 h-4 text-[#8A8175] group-hover:text-[#262320]" />
           </div>
-          <CreditCard className="w-5 h-5 text-[#8A8175]" />
-        </div>
+          <p className="font-serif text-xl font-bold text-[#262320] mt-1">
+            {paidOrders} <span className="text-xs font-normal text-[#8A8175]">/ {unpaidOrdersCount}</span>
+          </p>
+        </Link>
 
-        <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm flex items-center justify-between">
-          <div>
-            <span className="text-xs text-[#5C554C]">Registered Customers</span>
-            <p className="font-serif text-xl font-bold text-[#262320]">{totalCustomers}</p>
+        <Link
+          href={PATHS.admin.customers}
+          className="p-4 bg-white border border-[#E2DACD] rounded-sm hover:border-[#262320] transition-colors shadow-2xs group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-[#5C554C]">Patrons & Collectors</span>
+            <Users className="w-4 h-4 text-[#8A8175] group-hover:text-[#262320]" />
           </div>
-          <Users className="w-5 h-5 text-[#8A8175]" />
-        </div>
+          <p className="font-serif text-2xl font-bold text-[#262320] mt-1">{totalCustomers}</p>
+        </Link>
       </div>
 
+      {/* Main Grid: Orders & Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Orders Table */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-serif text-lg font-semibold text-[#262320]">
-              Recent Orders
-            </h2>
-            <Link href="/admin/orders" className="text-xs text-[#C47820] hover:underline">
-              View All Orders
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-serif text-lg font-bold text-[#262320]">
+                Recent Orders
+              </h2>
+              <p className="text-xs text-[#5C554C]">
+                Latest customer acquisitions and shipping milestones.
+              </p>
+            </div>
+            <Link
+              href={PATHS.admin.orders}
+              className="text-xs font-medium text-[#A85A32] hover:text-[#8F4824] flex items-center gap-1"
+            >
+              <span>View all orders</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
           {recentOrders.length === 0 ? (
-            <div className="p-8 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-center text-xs text-[#5C554C]">
-              No orders placed yet. Orders will appear here upon customer checkout.
+            <div className="p-12 bg-white border border-[#E2DACD] rounded-sm text-center text-xs text-[#8A8175] space-y-2">
+              <ShoppingBag className="w-6 h-6 mx-auto text-[#DEC99C]" />
+              <p className="font-medium text-[#262320]">No orders recorded yet</p>
+              <p>Customer checkout orders will appear here automatically with full tracking.</p>
             </div>
           ) : (
-            <div className="bg-[#FAF7F2] border border-[#E2DACD] rounded-sm overflow-hidden">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-[#F4EFE6] text-[#262320] border-b border-[#E2DACD]">
-                  <tr>
-                    <th className="py-2.5 px-3 font-semibold">Order</th>
-                    <th className="py-2.5 px-3 font-semibold">Customer</th>
-                    <th className="py-2.5 px-3 font-semibold">Date</th>
-                    <th className="py-2.5 px-3 font-semibold">Status</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Total</th>
-                    <th className="py-2.5 px-3 font-semibold text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#ECE5DA]">
-                  {recentOrders.map((ord) => (
-                    <tr key={ord.id} className="hover:bg-[#FAF6EF]">
-                      <td className="py-2.5 px-3 font-mono font-medium text-[#262320]">
-                        {ord.orderNumber}
-                      </td>
-                      <td className="py-2.5 px-3 text-[#5C554C]">{ord.customerName}</td>
-                      <td className="py-2.5 px-3 text-[#8A8175]">
-                        {new Date(ord.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <span className="px-2 py-0.5 text-[10px] rounded-sm bg-[#EAE2D5] text-[#262320] font-medium border border-[#D1C6B4]">
-                          {ord.status}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-medium text-[#262320]">
-                        {formatPrice(ord.total)}
-                      </td>
-                      <td className="py-2.5 px-3 text-right">
-                        <Link
-                          href={`/admin/orders/${ord.id}`}
-                          className="text-[#C47820] hover:underline"
-                        >
-                          Manage
-                        </Link>
-                      </td>
+            <div className="bg-white border border-[#E2DACD] rounded-sm overflow-hidden shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="bg-[#FAF7F2] text-[#262320] border-b border-[#E2DACD]">
+                    <tr>
+                      <th className="py-3 px-3 font-semibold">Order</th>
+                      <th className="py-3 px-3 font-semibold">Collector</th>
+                      <th className="py-3 px-3 font-semibold">Fulfillment</th>
+                      <th className="py-3 px-3 font-semibold">Payment</th>
+                      <th className="py-3 px-3 font-semibold text-right">Total</th>
+                      <th className="py-3 px-3 font-semibold text-right">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#ECE5DA]">
+                    {recentOrders.map((ord) => (
+                      <tr key={ord.id} className="hover:bg-[#FAF9F5] transition-colors">
+                        <td className="py-3 px-3 font-mono font-medium text-[#262320]">
+                          <Link
+                            href={PATHS.admin.orderDetail(ord.id)}
+                            className="hover:underline hover:text-[#A85A32]"
+                          >
+                            {ord.orderNumber}
+                          </Link>
+                          <span className="block text-[10px] text-[#8A8175] font-sans">
+                            {new Date(ord.createdAt).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <p className="font-medium text-[#262320] truncate max-w-[140px]">
+                            {ord.customerName}
+                          </p>
+                          <p className="text-[10px] text-[#8A8175]">{ord.items.length} {ord.items.length === 1 ? 'painting' : 'paintings'}</p>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-block px-2 py-0.5 text-[10px] rounded-xs font-medium border ${getOrderStatusBadge(
+                              ord.status
+                            )}`}
+                          >
+                            {ord.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span
+                            className={`inline-block px-2 py-0.5 text-[10px] rounded-xs font-medium border ${getPaymentStatusBadge(
+                              ord.paymentStatus
+                            )}`}
+                          >
+                            {ord.paymentStatus}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right font-medium text-[#262320]">
+                          {formatPrice(ord.total)}
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <Link
+                            href={PATHS.admin.orderDetail(ord.id)}
+                            className="text-[#A85A32] hover:text-[#8F4824] font-medium"
+                          >
+                            Manage
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Low Stock Alerts & Inquiries Sidebar */}
+        {/* Operational Sidebar (Stock & Messages) */}
         <div className="space-y-6">
-          {/* Low Stock Alert */}
-          <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-4">
+          {/* Low Stock Alerts */}
+          <div className="p-5 bg-white border border-[#E2DACD] rounded-sm space-y-4 shadow-2xs">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-sm font-semibold text-[#262320] flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-[#C47820]" />
+              <h2 className="font-serif text-sm font-bold text-[#262320] flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-[#A85A32]" />
                 <span>Low Inventory Notice</span>
               </h2>
-              <Link href="/admin/inventory" className="text-xs text-[#C47820] hover:underline">
-                Manage Stock
+              <Link
+                href={PATHS.admin.inventory}
+                className="text-xs text-[#A85A32] hover:underline font-medium"
+              >
+                Stock View
               </Link>
             </div>
 
             {lowStockVariants.length === 0 ? (
               <p className="text-xs text-[#5C554C]">
-                All product variants have healthy stock levels.
+                All workshop artworks currently maintain healthy inventory reserves.
               </p>
             ) : (
               <div className="space-y-2.5 text-xs">
                 {lowStockVariants.map((v) => (
                   <div
                     key={v.id}
-                    className="p-2.5 bg-[#FAF6EF] border border-[#ECE5DA] rounded-sm flex items-center justify-between"
+                    className="p-2.5 bg-[#FAF7F2] border border-[#ECE5DA] rounded-sm flex items-center justify-between gap-2"
                   >
-                    <div className="min-w-0 pr-2">
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-[#262320] truncate">{v.product.title}</p>
-                      <p className="text-[11px] text-[#8A8175]">
-                        {v.size} ({v.frame})
+                      <p className="text-[10px] text-[#8A8175]">
+                        {v.size} {v.frame ? `• ${v.frame}` : ''}
                       </p>
                     </div>
                     <span
-                      className={`text-[11px] px-1.5 py-0.5 rounded-sm font-semibold shrink-0 ${
+                      className={`text-[10px] px-2 py-0.5 rounded-xs font-semibold shrink-0 border ${
                         v.stock === 0
-                          ? 'bg-[#FAF0F0] text-[#8C2B2B] border border-[#D9B5B5]'
-                          : 'bg-[#FDF4E7] text-[#94601A] border border-[#EAD5B8]'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}
                     >
                       {v.stock === 0 ? 'Out of Stock' : `${v.stock} left`}
@@ -291,22 +428,47 @@ export default async function AdminDashboardPage() {
             )}
           </div>
 
-          {/* Pending Inquiries Card */}
-          <div className="p-5 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-3">
-            <h2 className="font-serif text-sm font-semibold text-[#262320]">
-              Pending Inquiries
-            </h2>
+          {/* Pending Inquiries */}
+          <div className="p-5 bg-white border border-[#E2DACD] rounded-sm space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-sm font-bold text-[#262320] flex items-center gap-1.5">
+                <MailQuestion className="w-4 h-4 text-[#262320]" />
+                <span>Patron Inquiries</span>
+              </h2>
+              {inquiriesCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#A85A32] text-white">
+                  {inquiriesCount} new
+                </span>
+              )}
+            </div>
+
             <p className="text-xs text-[#5C554C]">
-              You have <strong>{inquiriesCount}</strong> unread contact messages awaiting reply.
+              {inquiriesCount === 0
+                ? 'All custom commission requests and inquiries are answered.'
+                : `You have ${inquiriesCount} unread patron messages awaiting curator response.`}
             </p>
-            <div>
-              <Link
-                href="/admin/enquiries"
-                className="btn-secondary text-xs py-1.5 px-3 inline-flex items-center gap-1"
-              >
-                <span>Open Enquiries</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+
+            <Link
+              href={PATHS.admin.enquiries}
+              className="btn-secondary text-xs py-2 px-3 w-full flex items-center justify-center gap-1.5"
+            >
+              <span>Open Inquiries Portal</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          {/* Quick Stats Summary */}
+          <div className="p-4 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm text-xs space-y-2">
+            <p className="font-semibold text-[#262320] text-[11px] uppercase tracking-wider">
+              Workshop Overview
+            </p>
+            <div className="flex justify-between text-[#5C554C]">
+              <span>Active Artwork Catalog:</span>
+              <span className="font-semibold text-[#262320]">{totalProducts} paintings</span>
+            </div>
+            <div className="flex justify-between text-[#5C554C]">
+              <span>Registered Collectors:</span>
+              <span className="font-semibold text-[#262320]">{totalCustomers} accounts</span>
             </div>
           </div>
         </div>

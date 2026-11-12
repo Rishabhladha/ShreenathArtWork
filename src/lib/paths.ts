@@ -125,6 +125,13 @@ export const PATHS = {
 
   // API Endpoints
   api: {
+    auth: {
+      resetPassword: {
+        sendOtp: '/api/auth/reset-password/send-otp',
+        verifyOtp: '/api/auth/reset-password/verify-otp',
+        reset: '/api/auth/reset-password/reset',
+      },
+    },
     account: {
       register: '/api/account/register',
     },

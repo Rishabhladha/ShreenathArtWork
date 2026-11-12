@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, useSession } from 'next-auth/react';
 import { AlertCircle, Lock, Mail, ArrowRight, Shield } from 'lucide-react';
 import { PATHS } from '@/lib/paths';
+import { PasswordInput } from '@/components/common/PasswordInput';
 
 function getSafeRedirectUrl(url: string | null, fallback: string): string {
   if (!url) return fallback;
@@ -113,7 +114,7 @@ function LoginForm() {
           </div>
 
           <div className="space-y-1">
-            <div className="flex justify-between items-baseline">
+            <div className="flex justify-between items-baseline mb-1">
               <label className="block text-xs font-medium text-[#5C554C]">Password</label>
               <Link
                 href={PATHS.account.forgotPassword}
@@ -122,12 +123,11 @@ function LoginForm() {
                 Forgot password?
               </Link>
             </div>
-            <input
-              type="password"
+            <PasswordInput
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
+              placeholder="Enter your account password"
             />
           </div>
 

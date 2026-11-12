@@ -4,8 +4,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { Shield, Lock, AlertCircle, ArrowRight, UserCheck, LogOut } from 'lucide-react';
+import { Shield, Lock, AlertCircle, ArrowRight, UserCheck, LogOut, Info } from 'lucide-react';
 import { PATHS } from '@/lib/paths';
+import { PasswordInput } from '@/components/common/PasswordInput';
 
 function getSafeRedirectUrl(url: string | null, fallback: string): string {
   if (!url) return fallback;
@@ -27,27 +28,29 @@ function AdminLoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(
     urlError === 'unauthorized'
-      ? 'Access restricted to gallery administrator and staff accounts.'
+      ? 'Access restricted. This account does not have administrator privileges (requires OWNER or STAFF role).'
       : null
   );
-  const [isCustomerAccount, setIsCustomerAccount] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // If already logged in as an administrator, immediately redirect to dashboard
+  // If already authenticated as an administrator, navigate to dashboard
   useEffect(() => {
     if (sessionStatus === 'authenticated' && session?.user) {
       if (session.user.role === 'OWNER' || session.user.role === 'STAFF') {
         window.location.href = callbackUrl;
-      } else {
-        setIsCustomerAccount(true);
       }
     }
   }, [sessionStatus, session, callbackUrl]);
 
+  const isCustomerLoggedIn =
+    sessionStatus === 'authenticated' &&
+    session?.user &&
+    session.user.role !== 'OWNER' &&
+    session.user.role !== 'STAFF';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsCustomerAccount(false);
     setSubmitting(true);
 
     try {
@@ -63,20 +66,8 @@ function AdminLoginForm() {
         return;
       }
 
-      // Check the session role directly after successful credential validation
-      const sessionRes = await fetch('/api/auth/session');
-      const activeSession = await sessionRes.json();
-
-      if (activeSession?.user?.role !== 'OWNER' && activeSession?.user?.role !== 'STAFF') {
-        setError(
-          `Account (${email}) is signed in as a Customer and does not have administrator privileges. Gallery management requires an OWNER or STAFF account.`
-        );
-        setIsCustomerAccount(true);
-        setSubmitting(false);
-        return;
-      }
-
-      // Authorized administrator: hard redirect to backoffice dashboard
+      // Hard redirect to admin dashboard. The server-side layout and page
+      // verify OWNER/STAFF role from the fresh cookie directly.
       window.location.href = callbackUrl;
     } catch {
       setError('An unexpected technical error occurred during admin authentication.');
@@ -103,32 +94,44 @@ function AdminLoginForm() {
         </div>
 
         <div className="p-6 sm:p-8 bg-[#FAF7F2] border border-[#E2DACD] rounded-sm space-y-5 shadow-sm">
-          {error && (
-            <div className="p-3.5 bg-[#FAF0F0] border border-[#D9B5B5] rounded-sm text-xs text-[#8C2B2B] space-y-2">
+          {/* Active Customer Session Notice */}
+          {isCustomerLoggedIn && (
+            <div className="p-3.5 bg-[#FAF1E8] border border-[#DEC99C] rounded-sm text-xs text-[#7A4B1A] space-y-2">
               <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
+                <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#A85A32]" />
+                <div>
+                  <p className="font-semibold text-[#262320]">
+                    Signed in as Customer ({session.user.email})
+                  </p>
+                  <p className="text-[11px] text-[#5C554C] mt-0.5">
+                    To access backoffice management, please sign in with an authorized OWNER or STAFF account below.
+                  </p>
+                </div>
               </div>
 
-              {isCustomerAccount && (
-                <div className="pt-2 border-t border-[#D9B5B5]/60 flex flex-col sm:flex-row gap-2">
-                  <Link
-                    href={PATHS.account.profile}
-                    className="btn-primary text-xs py-1.5 px-3 flex items-center justify-center gap-1.5"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Go to Customer Profile</span>
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => signOut({ redirect: false }).then(() => setIsCustomerAccount(false))}
-                    className="btn-secondary text-xs py-1.5 px-3 flex items-center justify-center gap-1.5"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
+              <div className="pt-2 border-t border-[#DEC99C]/60 flex items-center justify-between text-[11px]">
+                <Link
+                  href={PATHS.account.profile}
+                  className="text-[#A85A32] hover:underline font-medium"
+                >
+                  Go to Customer Account
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => signOut({ redirect: false })}
+                  className="text-[#8C2B2B] hover:underline font-medium flex items-center gap-1"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3.5 bg-[#FAF0F0] border border-[#D9B5B5] rounded-sm text-xs text-[#8C2B2B] flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -145,16 +148,13 @@ function AdminLoginForm() {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-[#5C554C]">Password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-              />
-            </div>
+            <PasswordInput
+              label="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter administrator password"
+            />
 
             <button
               type="submit"

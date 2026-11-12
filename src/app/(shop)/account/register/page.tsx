@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema } from '@/lib/validators';
 import { AlertCircle, UserPlus, CheckCircle2 } from 'lucide-react';
+import { PasswordInput } from '@/components/common/PasswordInput';
 import { z } from 'zod';
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -86,7 +87,7 @@ export default function RegisterPage() {
               <input
                 type="text"
                 {...register('name')}
-                className="w-full px-3 py-2 text-xs bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
+                className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
                 placeholder="Your full name"
               />
               {errors.name && (
@@ -99,7 +100,7 @@ export default function RegisterPage() {
               <input
                 type="email"
                 {...register('email')}
-                className="w-full px-3 py-2 text-xs bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
+                className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
                 placeholder="name@example.com"
               />
               {errors.email && (
@@ -112,7 +113,7 @@ export default function RegisterPage() {
               <input
                 type="tel"
                 {...register('phone')}
-                className="w-full px-3 py-2 text-xs bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
+                className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
                 placeholder="10-digit number"
               />
               {errors.phone && (
@@ -120,17 +121,12 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-xs text-[#5C554C]">Password (min 8 characters) *</label>
-              <input
-                type="password"
-                {...register('password')}
-                className="w-full px-3 py-2 text-xs bg-[#FAF6EF] border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-              />
-              {errors.password && (
-                <p className="text-[11px] text-[#8C2B2B]">{errors.password.message}</p>
-              )}
-            </div>
+            <PasswordInput
+              label="Password (min 8 characters) *"
+              {...register('password')}
+              error={errors.password?.message}
+              placeholder="Create a strong password"
+            />
 
             <button
               type="submit"
@@ -156,4 +152,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

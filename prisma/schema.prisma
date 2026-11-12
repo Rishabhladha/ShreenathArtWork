@@ -415,3 +415,16 @@ model SiteSettings {
   policyShipping         String?
   updatedAt              DateTime @updatedAt
 }
+
+
+model PasswordResetOtp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  otpHash   String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}

@@ -7,7 +7,9 @@ export type ActivityEventType =
   | 'ADD_TO_CART'
   | 'CHECKOUT_STARTED'
   | 'ORDER_PLACED'
-  | 'PAYMENT_FAILED';
+  | 'PAYMENT_FAILED'
+  | 'PASSWORD_RESET_OTP_REQUESTED'
+  | 'PASSWORD_RESET_SUCCESS';
 
 export async function logActivityEvent(params: {
   eventType: ActivityEventType;
@@ -29,4 +31,3 @@ export async function logActivityEvent(params: {
     console.error('Failed to log activity event:', error);
   }
 }
-

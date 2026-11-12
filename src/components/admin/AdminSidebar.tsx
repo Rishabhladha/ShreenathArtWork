@@ -3,24 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Package,
-  Layers,
-  ShoppingBag,
-  CreditCard,
-  Users,
-  Activity,
-  Warehouse,
-  Tag,
-  MessageSquare,
-  MailQuestion,
-  Mail,
-  Settings,
-  ShieldCheck,
-} from 'lucide-react';
 import { Role } from '@prisma/client';
 import { PATHS, isPathActive } from '@/lib/paths';
+import { ADMIN_NAV_SECTIONS } from './adminNavConfig';
 
 interface AdminSidebarProps {
   role?: Role;
@@ -34,49 +19,62 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
     return null;
   }
 
-  const navItems = [
-    { href: PATHS.admin.dashboard, label: 'Dashboard', icon: LayoutDashboard, exact: true },
-    { href: PATHS.admin.products, label: 'Products & Artworks', icon: Package },
-    { href: PATHS.admin.categories, label: 'Categories', icon: Layers },
-    { href: PATHS.admin.orders, label: 'Orders & Shipments', icon: ShoppingBag },
-    { href: PATHS.admin.payments, label: 'Payments & Refunds', icon: CreditCard },
-    { href: PATHS.admin.customers, label: 'Customers', icon: Users },
-    { href: PATHS.admin.activity, label: 'Activity & Funnel', icon: Activity },
-    { href: PATHS.admin.inventory, label: 'Inventory & Stock', icon: Warehouse },
-    { href: PATHS.admin.coupons, label: 'Discount Coupons', icon: Tag },
-    { href: PATHS.admin.reviews, label: 'Reviews Moderation', icon: MessageSquare },
-    { href: PATHS.admin.enquiries, label: 'Inquiries & Commissions', icon: MailQuestion },
-    { href: PATHS.admin.newsletter, label: 'Newsletter Subscribers', icon: Mail },
-    { href: PATHS.admin.settings, label: 'Gallery Settings', icon: Settings },
-    { href: PATHS.admin.auditLog, label: 'Audit Trail', icon: ShieldCheck },
-  ];
-
   return (
-    <aside className="w-64 bg-[#FAF7F2] border-r border-[#E2DACD] flex flex-col shrink-0 overflow-y-auto hidden md:flex">
-      <div className="p-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = isPathActive(pathname, item.href, item.exact);
-          const Icon = item.icon;
+    <aside className="w-64 bg-[#FAF7F2] border-r border-[#E2DACD] flex flex-col shrink-0 overflow-y-auto hidden md:flex select-none">
+      <div className="p-4 space-y-6">
+        {ADMIN_NAV_SECTIONS.map((section) => (
+          <div key={section.title} className="space-y-1">
+            <h3 className="px-3 text-[10px] font-bold uppercase tracking-widest text-[#8A8175]">
+              {section.title}
+            </h3>
+            <div className="space-y-0.5 pt-1">
+              {section.items.map((item) => {
+                const isActive = isPathActive(pathname, item.href, item.exact);
+                const Icon = item.icon;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-sm transition-colors ${
-                isActive
-                  ? 'bg-[#262320] text-[#FAF6EF]'
-                  : 'text-[#5C554C] hover:text-[#262320] hover:bg-[#F4EFE6]'
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center justify-between px-3 py-2 text-xs font-medium rounded-sm transition-all duration-150 ${
+                      isActive
+                        ? 'bg-[#262320] text-[#FAF6EF] shadow-2xs font-semibold'
+                        : 'text-[#5C554C] hover:text-[#262320] hover:bg-[#F2ECE1]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          isActive ? 'text-[#DEC99C]' : 'text-[#8A8175]'
+                        }`}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#EAE2D5] text-[#262320] font-semibold">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="mt-auto p-4 border-t border-[#ECE5DA] text-[11px] text-[#8A8175]">
-        <p>SHREENATH ART WORK</p>
-        <p className="mt-0.5">Nathdwara, Rajasthan 313301</p>
+
+      <div className="mt-auto p-4 border-t border-[#ECE5DA] bg-[#F5EFE6]/50">
+        <div className="flex items-center justify-between text-[11px] text-[#7A7165]">
+          <div>
+            <p className="font-semibold text-[#262320]">SHREENATH ART WORK</p>
+            <p className="text-[10px] text-[#8A8175]">Nathdwara, Rajasthan</p>
+          </div>
+          {role && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#262320] text-[#DEC99C]">
+              {role}
+            </span>
+          )}
+        </div>
       </div>
     </aside>
   );
