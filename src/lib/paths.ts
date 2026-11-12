@@ -83,6 +83,12 @@ export const PATHS = {
     wishlist: '/account/wishlist',
     forgotPassword: '/account/forgot-password',
     register: '/account/register',
+    verifyEmail: (email?: string, callbackUrl?: string): string => {
+      const params: Record<string, string> = {};
+      if (email) params.email = email;
+      if (callbackUrl) params.callbackUrl = callbackUrl;
+      return `/account/verify-email${buildQueryString(params)}`;
+    },
   },
 
   // Information & Legal
@@ -130,6 +136,10 @@ export const PATHS = {
         sendOtp: '/api/auth/reset-password/send-otp',
         verifyOtp: '/api/auth/reset-password/verify-otp',
         reset: '/api/auth/reset-password/reset',
+      },
+      verifyEmail: {
+        sendOtp: '/api/auth/verify-email/send-otp',
+        verifyOtp: '/api/auth/verify-email/verify-otp',
       },
     },
     account: {

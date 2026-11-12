@@ -63,6 +63,7 @@ model User {
   passwordHash      String?
   phone             String?
   role              Role               @default(CUSTOMER)
+  emailVerified     DateTime?
   isActive          Boolean            @default(true)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -427,4 +428,18 @@ model PasswordResetOtp {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+
+model EmailVerificationOtp {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  otpHash   String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
 }

@@ -9,6 +9,7 @@ import { useSiteSettings } from '@/hooks/use-site-settings';
 import { calculateOrderTotals, formatPrice } from '@/lib/money';
 import { trackActivity } from '@/lib/telemetry';
 import { ShieldCheck, ArrowRight, AlertCircle, Lock, Truck, CreditCard, Banknote } from 'lucide-react';
+import { PATHS } from '@/lib/paths';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -168,6 +169,12 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+
+    if (!session?.user) {
+      setServerError('Account authentication required. Please sign in or create an account to complete your purchase.');
+      window.location.href = PATHS.account.login('/checkout');
+      return;
+    }
 
     if (!validate()) {
       setServerError('Please fill in all required delivery details (Name, 10-digit Phone, Email, Address, City, PIN code).');
@@ -345,13 +352,43 @@ export default function CheckoutPage() {
         {!session?.user && (
           <p className="text-xs text-[#5C554C]">
             Already have an account?{' '}
-            <Link href="/account/login" className="text-[#262320] underline font-medium">
+            <Link href={PATHS.account.login('/checkout')} className="text-[#262320] underline font-medium">
               Sign In
             </Link>{' '}
-            or continue as Guest.
+            (Required for purchase)
           </p>
         )}
       </div>
+
+      {!session?.user && (
+        <div className="p-4 bg-[#FAF1E8] border border-[#DEC99C] rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-[#A85A32] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-[#262320]">
+                Collector Account Required for Sacred Art Orders
+              </p>
+              <p className="text-[#5C554C] mt-0.5">
+                To guarantee insured transit, temple authenticity certification, and real-time shipment updates, orders cannot be placed as a guest.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
+            <Link
+              href={PATHS.account.login('/checkout')}
+              className="btn-primary text-xs py-2 px-4 shadow-2xs font-semibold"
+            >
+              Sign In to Order
+            </Link>
+            <Link
+              href={`${PATHS.account.register}?callbackUrl=/checkout`}
+              className="btn-secondary text-xs py-2 px-4"
+            >
+              Create Account
+            </Link>
+          </div>
+        </div>
+      )}
 
       {serverError && (
         <div className="p-4 bg-[#FAF0F0] border border-[#D9B5B5] rounded-sm text-xs text-[#8C2B2B] flex items-center gap-2">
@@ -673,6 +710,8 @@ export default function CheckoutPage() {
                 <span>
                   {submitting
                     ? 'Processing...'
+                    : !session?.user
+                    ? `Sign In to Complete Order (${formatPrice(total)})`
                     : formData.paymentMethod === 'ONLINE'
                     ? `Proceed to Payment: ${formatPrice(total)}`
                     : `Confirm COD Order: ${formatPrice(total)}`}

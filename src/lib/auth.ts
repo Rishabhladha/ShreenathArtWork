@@ -42,6 +42,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid email or password');
         }
 
+        if (user.role === 'CUSTOMER' && !user.emailVerified) {
+          throw new Error('EMAIL_NOT_VERIFIED');
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -98,4 +102,3 @@ export async function requireOwnerSession() {
   }
   return session;
 }
-

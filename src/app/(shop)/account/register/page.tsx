@@ -2,20 +2,25 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema } from '@/lib/validators';
 import { AlertCircle, UserPlus, CheckCircle2 } from 'lucide-react';
 import { PasswordInput } from '@/components/common/PasswordInput';
+import { PATHS } from '@/lib/paths';
 import { z } from 'zod';
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || undefined;
+
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const {
     register,
@@ -39,10 +44,11 @@ export default function RegisterPage() {
         throw new Error(resData.error || 'Failed to register account');
       }
 
+      setRegisteredEmail(data.email);
       setSuccess(true);
       setTimeout(() => {
-        router.push('/account/login');
-      }, 2000);
+        router.push(PATHS.account.verifyEmail(data.email, callbackUrl));
+      }, 1500);
     } catch (err: unknown) {
       setServerError(err instanceof Error ? err.message : 'Registration failed');
     }
@@ -77,18 +83,18 @@ export default function RegisterPage() {
               Account Created Successfully
             </p>
             <p className="text-xs text-[#5C554C]">
-              Redirecting you to the sign in portal...
+              We have dispatched a 6-digit verification code to <strong>{registeredEmail}</strong>. Redirecting to verification...
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1">
-              <label className="block text-xs text-[#5C554C]">Full Name *</label>
+              <label className="block text-xs font-medium text-[#5C554C]">Full Name</label>
               <input
                 type="text"
                 {...register('name')}
                 className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-                placeholder="Your full name"
+                placeholder="Rishabh Ladha"
               />
               {errors.name && (
                 <p className="text-[11px] text-[#8C2B2B]">{errors.name.message}</p>
@@ -96,7 +102,7 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs text-[#5C554C]">Email Address *</label>
+              <label className="block text-xs font-medium text-[#5C554C]">Email Address</label>
               <input
                 type="email"
                 {...register('email')}
@@ -109,46 +115,66 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs text-[#5C554C]">Mobile Phone (Optional)</label>
+              <label className="block text-xs font-medium text-[#5C554C]">
+                Mobile Phone (Optional)
+              </label>
               <input
                 type="tel"
                 {...register('phone')}
                 className="w-full px-3 py-2 text-xs bg-white border border-[#E2DACD] rounded-sm focus-ring text-[#262320]"
-                placeholder="10-digit number"
+                placeholder="9079901405"
               />
               {errors.phone && (
                 <p className="text-[11px] text-[#8C2B2B]">{errors.phone.message}</p>
               )}
             </div>
 
-            <PasswordInput
-              label="Password (min 8 characters) *"
-              {...register('password')}
-              error={errors.password?.message}
-              placeholder="Create a strong password"
-            />
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-[#5C554C]">Password</label>
+              <PasswordInput
+                {...register('password')}
+                placeholder="Choose a strong password (minimum 8 characters)"
+              />
+              {errors.password && (
+                <p className="text-[11px] text-[#8C2B2B]">{errors.password.message}</p>
+              )}
+            </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full btn-primary text-xs py-3 flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full btn-primary text-xs py-2.5 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>{isSubmitting ? 'Creating Account...' : 'Register'}</span>
+              <span>{isSubmitting ? 'Creating Account & Sending OTP...' : 'Register Account'}</span>
             </button>
           </form>
         )}
 
-        <div className="pt-4 border-t border-[#ECE5DA] text-center text-xs text-[#5C554C]">
-          <span>Already registered? </span>
+        <div className="pt-3 border-t border-[#ECE5DA] text-center text-xs text-[#5C554C]">
+          <span>Already have an account? </span>
           <Link
-            href="/account/login"
-            className="text-[#262320] font-semibold underline hover:text-[#C47820]"
+            href={callbackUrl ? PATHS.account.login(callbackUrl) : PATHS.account.login()}
+            className="text-[#262320] font-semibold underline hover:text-[#A85A32]"
           >
-            Sign In
+            Sign In Here
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="max-w-md mx-auto p-12 text-center text-xs text-[#8A8175]">
+          Loading registration...
+        </div>
+      }
+    >
+      <RegisterContent />
+    </React.Suspense>
   );
 }

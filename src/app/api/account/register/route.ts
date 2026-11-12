@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { registerSchema } from '@/lib/validators';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { logActivityEvent } from '@/lib/events';
+import { sendEmailVerificationOtpEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
   try {
@@ -48,7 +49,34 @@ export async function POST(req: Request) {
         phone: phone || null,
         passwordHash,
         role: 'CUSTOMER',
+        emailVerified: null,
       },
+    });
+
+    // Generate 6-digit email verification OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.emailVerificationOtp.deleteMany({
+      where: { email: cleanEmail },
+    });
+
+    await prisma.emailVerificationOtp.create({
+      data: {
+        email: cleanEmail,
+        otpHash,
+        expiresAt,
+        attempts: 0,
+        used: false,
+      },
+    });
+
+    // Dispatch verification email via Gmail SMTP
+    await sendEmailVerificationOtpEmail({
+      email: cleanEmail,
+      otp,
+      customerName: name,
     });
 
     await logActivityEvent({
@@ -59,7 +87,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully. You may now sign in.',
+      requiresVerification: true,
+      email: cleanEmail,
+      message: 'Account created! A 6-digit verification code has been dispatched to your email.',
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -69,4 +99,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

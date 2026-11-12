@@ -11,14 +11,22 @@ import {
   Settings,
   Star,
   ExternalLink,
+  ShieldCheck,
+  CheckCircle2,
+  Trash2,
+  Edit3,
+  PlusCircle,
+  Clock,
+  Warehouse,
 } from 'lucide-react';
 
-interface FormattedAudit {
+export interface FormattedAudit {
   headline: string;
   chips: Array<{ label: string; value: string }>;
   entityLabel: string;
   entityLink?: string;
   actionBadge: { label: string; colorClass: string };
+  iconName: string;
 }
 
 /**
@@ -40,27 +48,43 @@ export function formatAuditEntry(
     }
   }
 
-  // 1. Action Badge Styling
+  // 1. Action Badge Styling & Labels
   let actionLabel = action.replace(/_/g, ' ');
   let colorClass = 'bg-[#FAF6EF] text-[#262320] border-[#E2DACD]';
+  let iconName = 'edit';
 
-  if (action.includes('CREATE') || action.includes('ADD') || action.includes('PAID') || action.includes('APPROVE')) {
-    actionLabel = action.replace('CREATE_', '').replace('ADD_', '').replace('MARK_', '') + ' CREATED';
-    if (action === 'MARK_COD_PAID') actionLabel = 'PAID ON DELIVERY';
+  if (action === 'CREATE_PRODUCT' || action.includes('CREATE') || action.includes('ADD') || action.includes('APPROVE')) {
+    actionLabel = action.replace('CREATE_', '').replace('ADD_', '') + ' CREATED';
     if (action === 'APPROVE_REVIEW') actionLabel = 'REVIEW APPROVED';
-    colorClass = 'bg-[#EAF3EB] text-[#2A5C38] border-[#B7D8BD]';
-  } else if (action.includes('UPDATE') || action.includes('ADJUST') || action.includes('TOGGLE')) {
-    actionLabel = action.replace('UPDATE_', '').replace('ADJUST_', '') + ' UPDATED';
-    colorClass = 'bg-[#FAF1E8] text-[#A85A32] border-[#DEC99C]';
-  } else if (action.includes('DELETE') || action.includes('REMOVE') || action.includes('CANCEL')) {
+    colorClass = 'bg-[#EBF5EE] text-[#2A5C38] border-[#B7D8BD]';
+    iconName = 'create';
+  } else if (action === 'DELETE_PRODUCT' || action.includes('DELETE') || action.includes('REMOVE') || action.includes('CANCEL')) {
     actionLabel = action.replace('DELETE_', '') + ' REMOVED';
     colorClass = 'bg-[#FAF0F0] text-[#8C2B2B] border-[#D9B5B5]';
+    iconName = 'delete';
+  } else if (action === 'UPDATE_ORDER_STATUS') {
+    actionLabel = 'ORDER STATUS ADVANCED';
+    colorClass = 'bg-[#EEF2F6] text-[#2C464F] border-[#CCD7E2]';
+    iconName = 'order';
   } else if (action.includes('REFUND')) {
     actionLabel = 'REFUND ISSUED';
     colorClass = 'bg-[#F5EEF8] text-[#6B2D82] border-[#D8BFD8]';
+    iconName = 'refund';
+  } else if (action === 'EMAIL_VERIFIED') {
+    actionLabel = 'EMAIL VERIFIED';
+    colorClass = 'bg-[#EBF5EE] text-[#2A5C38] border-[#B7D8BD]';
+    iconName = 'verify';
+  } else if (action === 'PASSWORD_RESET') {
+    actionLabel = 'PASSWORD RESET';
+    colorClass = 'bg-[#FAF1E8] text-[#A85A32] border-[#DEC99C]';
+    iconName = 'security';
+  } else if (action.includes('UPDATE') || action.includes('ADJUST')) {
+    actionLabel = action.replace('UPDATE_', '').replace('ADJUST_', '') + ' UPDATED';
+    colorClass = 'bg-[#FAF1E8] text-[#A85A32] border-[#DEC99C]';
+    iconName = 'update';
   }
 
-  // 2. Entity Links & Names
+  // 2. Entity Links & Humanized Names
   let entityLabel = entity;
   let entityLink: string | undefined;
 
@@ -74,7 +98,7 @@ export function formatAuditEntry(
       if (entityId) entityLink = PATHS.admin.orderDetail(entityId);
       break;
     case 'category':
-      entityLabel = 'Collection Category';
+      entityLabel = 'Artwork Category';
       entityLink = PATHS.admin.categories;
       break;
     case 'coupon':
@@ -86,15 +110,16 @@ export function formatAuditEntry(
       entityLink = PATHS.admin.inventory;
       break;
     case 'customer':
+    case 'user':
       entityLabel = 'Collector Account';
       if (entityId) entityLink = PATHS.admin.customerDetail(entityId);
       break;
     case 'review':
-      entityLabel = 'Artwork Review';
+      entityLabel = 'Patron Review';
       entityLink = PATHS.admin.reviews;
       break;
     case 'settings':
-      entityLabel = 'Storefront Settings';
+      entityLabel = 'Gallery Settings';
       entityLink = PATHS.admin.settings;
       break;
     default:
@@ -105,64 +130,96 @@ export function formatAuditEntry(
   let headline = `${entityLabel} modification logged`;
   const chips: Array<{ label: string; value: string }> = [];
 
-  // Product specific
+  // Product actions
   if (parsed.title) {
-    headline = `Artwork: "${parsed.title}"`;
+    const titleClean = String(parsed.title).trim();
+    if (action.includes('CREATE')) {
+      headline = `Added new painting: "${titleClean}"`;
+    } else if (action.includes('DELETE')) {
+      headline = `Removed painting: "${titleClean}"`;
+    } else if (action.includes('UPDATE')) {
+      headline = `Updated painting details: "${titleClean}"`;
+    } else {
+      headline = `Artwork: "${titleClean}"`;
+    }
   }
   if (parsed.slug) {
     chips.push({ label: 'Slug', value: String(parsed.slug) });
   }
 
-  // Order specific
-  if (parsed.oldStatus && parsed.newStatus) {
-    headline = `Fulfillment status advanced: ${parsed.oldStatus} → ${parsed.newStatus}`;
+  // Order actions
+  if (parsed.orderNumber && parsed.status) {
+    headline = `Order ${parsed.orderNumber} advanced to ${parsed.status}`;
+    chips.push({ label: 'Order', value: String(parsed.orderNumber) });
+    chips.push({ label: 'New Status', value: String(parsed.status) });
+  } else if (parsed.oldStatus && parsed.newStatus) {
+    headline = `Order status changed: ${parsed.oldStatus} → ${parsed.newStatus}`;
+    chips.push({ label: 'Transition', value: `${parsed.oldStatus} → ${parsed.newStatus}` });
+  } else if (parsed.orderNumber) {
+    headline = `Order: ${parsed.orderNumber}`;
+    chips.push({ label: 'Order', value: String(parsed.orderNumber) });
   }
   if (parsed.trackingNumber) {
     chips.push({ label: 'Waybill', value: String(parsed.trackingNumber) });
   }
+  if (parsed.courierName) {
+    chips.push({ label: 'Courier', value: String(parsed.courierName) });
+  }
   if (parsed.amount) {
     chips.push({ label: 'Amount', value: formatPrice(Number(parsed.amount)) });
   }
-  if (parsed.reason) {
-    chips.push({ label: 'Reason', value: String(parsed.reason) });
-  }
 
-  // Inventory specific
+  // Inventory actions
   if (parsed.sku) {
     chips.push({ label: 'SKU', value: String(parsed.sku) });
   }
   if (parsed.oldStock !== undefined && parsed.newStock !== undefined) {
-    headline = `Stock updated for SKU ${parsed.sku || ''}: ${parsed.oldStock} → ${parsed.newStock} units`;
+    headline = `Inventory count adjusted for SKU ${parsed.sku || ''}: ${parsed.oldStock} → ${parsed.newStock} units`;
+    chips.push({ label: 'Change', value: `${parsed.oldStock} → ${parsed.newStock}` });
+  }
+  if (parsed.reason) {
+    chips.push({ label: 'Note', value: String(parsed.reason) });
   }
 
-  // Category specific
+  // Category actions
   if (parsed.name) {
-    headline = `Category: "${parsed.name}"`;
+    headline = `Artwork Category: "${parsed.name}"`;
   }
   if (parsed.deletedName) {
     headline = `Deleted category: "${parsed.deletedName}"`;
   }
 
-  // Coupon specific
+  // Coupon actions
   if (parsed.code) {
-    headline = `Coupon code: "${parsed.code}"`;
+    headline = `Promo Coupon: "${parsed.code}"`;
+    chips.push({ label: 'Code', value: String(parsed.code) });
   }
   if (parsed.discount) {
     chips.push({ label: 'Discount', value: `${parsed.discount}%` });
   }
 
-  // Settings specific
-  if (Array.isArray(parsed.fieldsUpdated)) {
-    headline = `Store settings updated (${parsed.fieldsUpdated.length} fields)`;
-    chips.push({ label: 'Fields', value: parsed.fieldsUpdated.join(', ') });
+  // Auth & Security actions
+  if (action === 'EMAIL_VERIFIED') {
+    headline = `Patron email verified via 6-digit OTP`;
+    if (parsed.email) chips.push({ label: 'Email', value: String(parsed.email) });
+  }
+  if (action === 'PASSWORD_RESET') {
+    headline = `Patron password successfully reset`;
+    if (parsed.email) chips.push({ label: 'Email', value: String(parsed.email) });
   }
 
-  // Generic fallback if no specific keys matched
+  // Settings actions
+  if (Array.isArray(parsed.fieldsUpdated)) {
+    headline = `Gallery settings updated (${parsed.fieldsUpdated.length} fields modified)`;
+    chips.push({ label: 'Updated', value: parsed.fieldsUpdated.slice(0, 3).join(', ') });
+  }
+
+  // Generic fallback: format remaining primitive values without raw JSON
   if (chips.length === 0 && Object.keys(parsed).length > 0) {
     Object.entries(parsed).forEach(([k, v]) => {
       if (k === 'title' || k === 'name' || k === 'note') return;
       if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
-        chips.push({ label: k, value: String(v) });
+        chips.push({ label: k.replace(/([A-Z])/g, ' $1').trim(), value: String(v) });
       }
     });
   }
@@ -173,6 +230,7 @@ export function formatAuditEntry(
     entityLabel,
     entityLink,
     actionBadge: { label: actionLabel, colorClass },
+    iconName,
   };
 }
 
@@ -201,10 +259,10 @@ export function AuditDetailCell({
         {formatted.entityLink && (
           <Link
             href={formatted.entityLink}
-            className="text-[#A85A32] hover:text-[#8F4824] inline-flex items-center text-[10px] gap-0.5"
-            title="Inspect entity"
+            className="text-[#A85A32] hover:text-[#8F4824] inline-flex items-center text-[10px] gap-0.5 font-medium ml-1"
+            title="Inspect record"
           >
-            <span>View</span>
+            <span>View Record</span>
             <ExternalLink className="w-2.5 h-2.5" />
           </Link>
         )}
@@ -248,7 +306,6 @@ export function formatActivityMetadata(eventType: string, metadataRaw: string | 
   if (parsed.price) chips.push({ label: 'Price', value: formatPrice(Number(parsed.price)) });
   if (parsed.size) chips.push({ label: 'Size', value: String(parsed.size) });
 
-  // Generic fallback if none of above
   if (chips.length === 0) {
     Object.entries(parsed).forEach(([k, v]) => {
       if (typeof v === 'string' || typeof v === 'number') {

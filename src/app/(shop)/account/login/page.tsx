@@ -46,13 +46,29 @@ function LoginForm() {
     setSubmitting(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const res = await signIn('credentials', {
         redirect: false,
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password,
       });
 
       if (res?.error) {
+        if (res.error === 'EMAIL_NOT_VERIFIED' || res.error.includes('EMAIL_NOT_VERIFIED')) {
+          // Trigger OTP dispatch and redirect to verification
+          try {
+            await fetch('/api/auth/verify-email/send-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: cleanEmail }),
+            });
+          } catch (err) {
+            console.error('Failed to dispatch verification OTP:', err);
+          }
+          window.location.href = PATHS.account.verifyEmail(cleanEmail, callbackUrl);
+          return;
+        }
+
         setError('Invalid email address or password. Please verify your details.');
         setSubmitting(false);
       } else {

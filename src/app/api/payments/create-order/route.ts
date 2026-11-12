@@ -48,7 +48,13 @@ export async function POST(req: Request) {
 
     const shippingInfo = addressParsed.data;
     const session = await getServerAuthSession();
-    const userId = session?.user?.id || null;
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Please sign in or create an account to place an order.' },
+        { status: 401 }
+      );
+    }
+    const userId = session.user.id;
 
     // Load site settings
     const settings = await prisma.siteSettings.findFirst();
