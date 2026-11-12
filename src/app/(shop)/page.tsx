@@ -83,7 +83,7 @@ export default async function HomePage() {
             {/* Right Column: Hero Artwork Showcase */}
             <div className="lg:col-span-5 relative w-full aspect-[4/5] max-w-md mx-auto lg:max-w-none rounded-xs overflow-hidden border-2 border-[#DEC99C] shadow-[0_16px_40px_rgba(35,28,16,0.12)] bg-[#231C10]">
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hero-shreenathji-shrine.webp"
+                src="/artworks/shreenathji-shrine.jpg"
                 alt="Sacred Shreenathji shrine sanctum portrait hand painted with natural mineral pigments and real gold foil"
                 fill
                 priority={true}

@@ -61,13 +61,58 @@ export async function POST(req: Request) {
 
     const data = result.data;
 
-    // Check slug uniqueness
-    const existing = await prisma.product.findUnique({
+    // 1. Check slug uniqueness
+    const existingSlug = await prisma.product.findUnique({
       where: { slug: data.slug },
     });
-    if (existing) {
+    if (existingSlug) {
       return NextResponse.json(
-        { error: 'A product with this URL slug already exists.' },
+        { error: `A painting with URL slug "${data.slug}" already exists. Please choose a distinct slug.` },
+        { status: 400 }
+      );
+    }
+
+    // 2. Check for duplicate SKUs within the submitted variants list
+    const submittedSkus = data.variants.map((v) => v.sku.trim());
+    const seenSkus = new Set<string>();
+    for (const sku of submittedSkus) {
+      if (seenSkus.has(sku.toLowerCase())) {
+        return NextResponse.json(
+          { error: `Duplicate SKU "${sku}" found within your variants. Each variant must have a unique SKU.` },
+          { status: 400 }
+        );
+      }
+      seenSkus.add(sku.toLowerCase());
+    }
+
+    // 3. Check for existing SKUs in the database
+    const existingVariant = await prisma.productVariant.findFirst({
+      where: {
+        sku: { in: submittedSkus },
+      },
+      select: {
+        sku: true,
+        product: { select: { title: true } },
+      },
+    });
+
+    if (existingVariant) {
+      return NextResponse.json(
+        {
+          error: `SKU "${existingVariant.sku}" is already assigned to "${existingVariant.product.title}". Please enter a unique SKU code.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 4. Verify category exists
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: data.categoryId },
+      select: { id: true },
+    });
+    if (!categoryExists) {
+      return NextResponse.json(
+        { error: 'Selected artwork category does not exist in the database.' },
         { status: 400 }
       );
     }
@@ -100,7 +145,7 @@ export async function POST(req: Request) {
             frame: v.frame,
             price: v.price,
             mrp: v.mrp || null,
-            sku: v.sku,
+            sku: v.sku.trim(),
             stock: v.stock,
             isDefault: v.isDefault,
           })),
@@ -121,10 +166,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, product: created });
   } catch (error) {
     console.error('Create product error:', error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = (error.meta?.target as string[]) || [];
+      return NextResponse.json(
+        {
+          error: `A unique constraint failed on ${target.join(', ') || 'product field'}. Please ensure all SKUs and slugs are unique.`,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to create product. Please try again.' },
+      {
+        error: error instanceof Error ? error.message : 'Failed to create product. Please try again.',
+      },
       { status: 500 }
     );
   }
 }
-

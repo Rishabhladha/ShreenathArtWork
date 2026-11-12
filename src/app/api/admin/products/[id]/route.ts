@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { requireAdminSession } from '@/lib/auth';
 import { productSchema } from '@/lib/validators';
 import { logAuditAction } from '@/lib/audit';
@@ -52,18 +53,64 @@ export async function PUT(req: Request, { params }: RouteProps) {
 
     const data = result.data;
 
-    // Check slug collision
-    const existing = await prisma.product.findFirst({
+    // 1. Check slug collision with other paintings
+    const existingSlug = await prisma.product.findFirst({
       where: { slug: data.slug, id: { not: id } },
     });
-    if (existing) {
+    if (existingSlug) {
       return NextResponse.json(
-        { error: 'Another painting with this URL slug already exists.' },
+        { error: `Another painting with URL slug "${data.slug}" already exists.` },
         { status: 400 }
       );
     }
 
-    // 1. Update basic product details
+    // 2. Check for duplicate SKUs within the submitted list
+    const submittedSkus = data.variants.map((v) => v.sku.trim());
+    const seenSkus = new Set<string>();
+    for (const sku of submittedSkus) {
+      if (seenSkus.has(sku.toLowerCase())) {
+        return NextResponse.json(
+          { error: `Duplicate SKU "${sku}" found within your variants. Each variant must have a unique SKU.` },
+          { status: 400 }
+        );
+      }
+      seenSkus.add(sku.toLowerCase());
+    }
+
+    // 3. Check if any SKU is already taken by a variant belonging to a DIFFERENT product
+    const conflictingVariant = await prisma.productVariant.findFirst({
+      where: {
+        sku: { in: submittedSkus },
+        productId: { not: id },
+      },
+      select: {
+        sku: true,
+        product: { select: { title: true } },
+      },
+    });
+
+    if (conflictingVariant) {
+      return NextResponse.json(
+        {
+          error: `SKU "${conflictingVariant.sku}" is already assigned to "${conflictingVariant.product.title}". Please use a distinct SKU.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 4. Verify category exists
+    const categoryExists = await prisma.category.findUnique({
+      where: { id: data.categoryId },
+      select: { id: true },
+    });
+    if (!categoryExists) {
+      return NextResponse.json(
+        { error: 'Selected artwork category does not exist.' },
+        { status: 400 }
+      );
+    }
+
+    // 5. Update basic product details
     await prisma.product.update({
       where: { id },
       data: {
@@ -82,7 +129,7 @@ export async function PUT(req: Request, { params }: RouteProps) {
       },
     });
 
-    // 2. Safely replace images (product images have no external order FKs)
+    // 6. Safely replace images (product images have no external order FKs)
     await prisma.productImage.deleteMany({ where: { productId: id } });
     if (data.images && data.images.length > 0) {
       for (let idx = 0; idx < data.images.length; idx++) {
@@ -99,16 +146,17 @@ export async function PUT(req: Request, { params }: RouteProps) {
       }
     }
 
-    // 3. Update variants without deleting those referenced by customer orders
+    // 7. Update variants without deleting those referenced by customer orders
     const existingVariants = await prisma.productVariant.findMany({
       where: { productId: id },
     });
 
-    const submittedSkus = new Set(data.variants.map((v) => v.sku));
+    const submittedSkusSet = new Set(submittedSkus);
 
     // Upsert or update submitted variants
     for (const v of data.variants) {
-      const match = existingVariants.find((ev) => ev.sku === v.sku);
+      const cleanSku = v.sku.trim();
+      const match = existingVariants.find((ev) => ev.sku === cleanSku || (v.id && ev.id === v.id));
       if (match) {
         await prisma.productVariant.update({
           where: { id: match.id },
@@ -117,6 +165,7 @@ export async function PUT(req: Request, { params }: RouteProps) {
             frame: v.frame,
             price: v.price,
             mrp: v.mrp || null,
+            sku: cleanSku,
             stock: v.stock,
             isDefault: v.isDefault,
           },
@@ -129,7 +178,7 @@ export async function PUT(req: Request, { params }: RouteProps) {
             frame: v.frame,
             price: v.price,
             mrp: v.mrp || null,
-            sku: v.sku,
+            sku: cleanSku,
             stock: v.stock,
             isDefault: v.isDefault,
           },
@@ -139,7 +188,7 @@ export async function PUT(req: Request, { params }: RouteProps) {
 
     // Safely retire obsolete variants not in the submission
     for (const ev of existingVariants) {
-      if (!submittedSkus.has(ev.sku)) {
+      if (!submittedSkusSet.has(ev.sku)) {
         const orderRefCount = await prisma.orderItem.count({
           where: { variantId: ev.id },
         });
@@ -180,8 +229,21 @@ export async function PUT(req: Request, { params }: RouteProps) {
     return NextResponse.json({ success: true, product: updated });
   } catch (error) {
     console.error('Update product error:', error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = (error.meta?.target as string[]) || [];
+      return NextResponse.json(
+        {
+          error: `A unique constraint failed on ${target.join(', ') || 'field'}. Please ensure all SKUs and slugs are unique.`,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to update product' },
+      {
+        error: error instanceof Error ? error.message : 'Failed to update painting. Please try again.',
+      },
       { status: 500 }
     );
   }
@@ -218,4 +280,3 @@ export async function DELETE(req: Request, { params }: RouteProps) {
     );
   }
 }
-

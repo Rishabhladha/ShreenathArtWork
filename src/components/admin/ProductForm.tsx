@@ -77,7 +77,7 @@ interface ProductFormProps {
 
 export function ProductForm({ initialProduct, categories }: ProductFormProps) {
   const router = useRouter();
-  const isEditing = Boolean(initialProduct);
+  const isEditing = Boolean(initialProduct && initialProduct.id);
 
   const [title, setTitle] = useState(initialProduct?.title || '');
   const [slug, setSlug] = useState(initialProduct?.slug || '');
@@ -125,7 +125,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         frame: 'Unframed / Rolled',
         priceRupees: 18000,
         mrpRupees: 21000,
-        sku: 'SKU-INIT-1',
+        sku: 'SAW-NEW-' + Math.random().toString(36).substring(2, 6).toUpperCase(),
         stock: 3,
         isDefault: true,
       },
@@ -258,7 +258,7 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         size: '36 x 48 in',
         frame: 'Teak Wood Frame',
         priceRupees: 25000,
-        sku: `SKU-VAR-${prev.length + 1}`,
+        sku: `SAW-VAR-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
         stock: 2,
         isDefault: false,
       },
@@ -292,6 +292,38 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
+
+    // Pre-flight client validations
+    if (!title.trim()) {
+      setError('Please enter a painting title.');
+      return;
+    }
+    if (!slug.trim()) {
+      setError('Please provide a URL slug.');
+      return;
+    }
+    if (!categoryId) {
+      setError('Please select an artwork category.');
+      return;
+    }
+    if (variants.length === 0) {
+      setError('Please configure at least one size/framing variant.');
+      return;
+    }
+    if (variants.some((v) => !v.sku || !v.sku.trim())) {
+      setError('Every variant must have a valid SKU code.');
+      return;
+    }
+    const skuSet = new Set<string>();
+    for (const v of variants) {
+      const s = v.sku.trim().toLowerCase();
+      if (skuSet.has(s)) {
+        setError(`Duplicate SKU "${v.sku}" found. Each variant SKU must be unique.`);
+        return;
+      }
+      skuSet.add(s);
+    }
+
     setSubmitting(true);
 
     try {
@@ -326,8 +358,10 @@ export function ProductForm({ initialProduct, categories }: ProductFormProps) {
         })),
       };
 
-      const url = isEditing && initialProduct?.id ? PATHS.api.admin.product(initialProduct.id) : PATHS.api.admin.products;
-      const method = isEditing ? 'PUT' : 'POST';
+      const url = isEditing && initialProduct?.id
+        ? PATHS.api.admin.product(initialProduct.id)
+        : PATHS.api.admin.products;
+      const method = isEditing && initialProduct?.id ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
